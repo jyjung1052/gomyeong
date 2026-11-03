@@ -1,0 +1,47 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # CI: 조각 합치기 → 문법 검사 → 동작 시뮬레이션
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build
+        run: ./scripts/build.sh
+      - name: Smoke test (7개 장면, 눕기, 접속 신호)
+        run: node src/stub.js | tail -3
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  # CD: main 에 올라가면 GitHub Pages 로 자동 배포
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

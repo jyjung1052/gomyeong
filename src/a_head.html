@@ -1,0 +1,144 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>고요의 문 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: 하얀 방 하나가 화면 전체. 캔버스가 바닥이고, 조작 막대는 위아래 가장자리에만 얹는다.
+   한 가지 세계(하얀 방)를 일부러 고정한 디자인이라 밝은 테마 하나로 둔다. */
+:root{
+  --paper:#ffffff; --ink:#2f2e2a; --mute:#8c8a82; --line:#dcdad2;
+  --pill:rgba(255,255,255,.82); --pill-edge:rgba(60,58,50,.16); --focus:#3d6f8f;
+  --display:'Gowun Batang','Nanum Myeongjo','Apple SD Gothic Neo','Malgun Gothic',serif;
+  --body:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{
+  background:var(--paper); color:var(--ink); font:15px/1.5 var(--body);
+  padding-block:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  overflow:hidden; position:relative;
+}
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;z-index:1;outline:none}
+
+/* 이름 입력 */
+#login{
+  position:fixed;inset:0;z-index:40;background:var(--paper);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  transition:opacity .9s ease;
+}
+#login.gone{opacity:0;pointer-events:none}
+#login svg{width:200px;max-width:100%;height:auto;margin-bottom:4px}
+#login h1{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(34px,9vw,52px);letter-spacing:.06em;text-wrap:balance}
+.lede{margin:0;max-width:30ch;color:#5d5b54;text-wrap:pretty}
+#loginForm{display:flex;flex-direction:column;gap:8px;width:min(100%,320px);margin-top:10px;text-align:left}
+#loginForm label{font-size:13px;color:var(--mute)}
+#nick{font:inherit;font-size:17px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+#nick:focus-visible,.go:focus-visible,.pill:focus-visible,.plain:focus-visible,#vol:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.go{margin-top:6px;font-family:var(--display);font-size:19px;padding:12px;border:0;border-radius:10px;background:#2f2e2a;color:#fff;cursor:pointer}
+.go:hover{background:#45433d}
+.note{margin:6px 0 0;font-size:13px;color:var(--mute);max-width:34ch;text-wrap:pretty}
+
+/* 장면 위 조작 막대 */
+#hud{position:fixed;inset:0;z-index:10;pointer-events:none}
+.top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));
+  transition:opacity 1.4s ease}
+.bottom{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(16px,env(safe-area-inset-left,0px))}
+.row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;transition:opacity 1.4s ease}
+.calm .fadey{opacity:.14}
+.calm .fadey:hover,.calm .fadey:focus-within{opacity:1}
+.pill,.chip,.pillbox{background:var(--pill);border:1px solid var(--pill-edge);border-radius:999px;color:var(--ink);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.pill{pointer-events:auto;font:inherit;font-size:14px;padding:8px 14px;min-height:40px;cursor:pointer;white-space:nowrap}
+.pill:hover{background:rgba(255,255,255,.95)}
+.sit{font-family:var(--display);font-weight:700;font-size:18px;padding:10px 26px;min-height:48px}
+[hidden]{display:none!important}
+.timer{pointer-events:none;font-variant-numeric:tabular-nums;color:#55534c;display:flex;align-items:center;height:40px;padding-block:0}
+.who{pointer-events:none;color:#55534c;display:flex;align-items:center;height:40px;padding-block:0}
+.top{flex-wrap:wrap}
+#hud.hubmode .place{order:3;flex-basis:100%}
+.place .chip{min-width:0}
+.place{flex:1;min-width:0;display:flex;justify-content:center;pointer-events:none}
+.chip{border-radius:14px;padding:4px 14px;text-align:center;max-width:100%;line-height:1.3}
+.chip b{display:block;font-family:var(--display);font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip small{display:block;font-size:12px;color:#55534c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pillbox{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:0 12px}
+.plain{background:none;border:0;font:inherit;font-size:14px;color:inherit;cursor:pointer;padding:8px 0;min-height:40px;white-space:nowrap}
+#vol{width:64px;accent-color:#2f2e2a}
+.breath{margin:0;font-family:var(--display);font-size:20px;background:var(--pill);border-radius:999px;padding:6px 18px;opacity:0;transition:opacity .8s ease;min-height:38px}
+.breath.on{opacity:1}
+.hubhint{margin:0;font-size:13px;color:#6f6d65;text-align:center;background:rgba(255,255,255,.75);padding:4px 14px;border-radius:999px}
+
+#veil{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:30;transition:opacity .75s ease}
+
+.sr{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden}
+.sr button:focus-visible{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:50;width:auto;height:auto}
+
+@media (prefers-reduced-motion:reduce){
+  #veil,#login,.top,.row,.breath{transition-duration:.01s}
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<canvas id="stage" aria-label="3D 명상 공간. 문을 눌러 들어가고, 바닥을 눌러 걸어가세요. 화면을 끌면 시점이 돌아가요."></canvas>
+
+<section id="login">
+  <svg viewBox="0 0 272 52" role="img" aria-label="일곱 개의 문">
+    <g fill="none" stroke="#cfcdc4" stroke-width="1.5">
+      <path d="M6 48V24a14 14 0 0 1 28 0v24"/>
+      <path d="M44 48V24a14 14 0 0 1 28 0v24"/>
+      <path d="M82 48V24a14 14 0 0 1 28 0v24"/>
+      <path d="M120 48V24a14 14 0 0 1 28 0v24"/>
+      <path d="M158 48V24a14 14 0 0 1 28 0v24"/>
+      <path d="M196 48V24a14 14 0 0 1 28 0v24"/>
+      <path d="M234 48V24a14 14 0 0 1 28 0v24"/>
+    </g>
+    <g stroke-width="2.5" stroke-linecap="round">
+      <line x1="6" x2="34" y1="48" y2="48" stroke="#4f9cc7"/>
+      <line x1="44" x2="72" y1="48" y2="48" stroke="#8fb8d9"/>
+      <line x1="82" x2="110" y1="48" y2="48" stroke="#7f86c6"/>
+      <line x1="120" x2="148" y1="48" y2="48" stroke="#3fae9f"/>
+      <line x1="158" x2="186" y1="48" y2="48" stroke="#8fa0b4"/>
+      <line x1="196" x2="224" y1="48" y2="48" stroke="#b88a52"/>
+      <line x1="234" x2="262" y1="48" y2="48" stroke="#6f8f8a"/>
+    </g>
+  </svg>
+  <h1>고요의 문</h1>
+  <p class="lede">하얀 방에서 문을 하나 고르세요. 그 너머에 앉아서 숨을 고를 수 있어요.</p>
+  <form id="loginForm" autocomplete="off">
+    <label for="nick">이름</label>
+    <input id="nick" maxlength="12" placeholder="불리고 싶은 이름" autocomplete="nickname">
+    <button class="go" type="submit">들어가기</button>
+  </form>
+  <p class="note">초대받아 로그인한 사람들끼리는 같은 문 안에서 서로 보여요. 소리가 나니 이어폰을 권해요.</p>
+</section>
+
+<div id="hud" hidden>
+  <div class="top fadey">
+    <button id="backBtn" class="pill" type="button">‹ 하얀 방</button>
+    <div id="who" class="pill who"></div>
+    <div id="together" class="pill who" hidden></div>
+    <div class="place"><div class="chip"><b id="placeName"></b><small id="placeHint"></small></div></div>
+    <div class="pillbox">
+      <button id="muteBtn" class="plain" type="button" aria-pressed="false">소리 켬</button>
+      <input id="vol" type="range" min="0" max="100" value="70" aria-label="소리 크기">
+    </div>
+  </div>
+  <div class="bottom">
+    <p id="hubHint" class="hubhint">바닥을 누르면 걸어가고, 문을 누르면 들어가요. 화면을 끌면 시점이 돌아가요.</p>
+    <p id="breathText" class="breath" aria-hidden="true"></p>
+    <div id="sitRow" class="row fadey">
+      <button id="breathBtn" class="pill" type="button" aria-pressed="true">호흡 안내 켬</button>
+      <button id="sitBtn" class="pill sit" type="button">여기 앉기</button>
+      <button id="lieBtn" class="pill" type="button">눕기</button>
+      <div id="timer" class="pill timer">앉은 시간 00:00</div>
+    </div>
+  </div>
+</div>
+
+<nav class="sr" id="doorNav" aria-label="문 목록"></nav>
+<div id="veil"></div>
