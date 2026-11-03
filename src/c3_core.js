@@ -16,7 +16,8 @@ const REALMS=[
   {id:'valley',name:'계곡',short:'흐르는 물',line:'계곡물 소리',color:'#3fae9f'},
   {id:'mountain',name:'산',short:'정상의 바람',line:'정상의 바람과 먼 종소리',color:'#8fa0b4'},
   {id:'cave',name:'동굴',short:'물방울',line:'물방울과 울림',color:'#b88a52'},
-  {id:'rain',name:'원두막',short:'빗소리',line:'처마에 듣는 빗소리',color:'#6f8f8a'}
+  {id:'rain',name:'원두막',short:'빗소리',line:'처마에 듣는 빗소리',color:'#6f8f8a'},
+  {id:'field',name:'들판',short:'바람과 들꽃',line:'풀잎을 스치는 바람',color:'#79b04f'}
 ];
 
 /* ---- 렌더러 ---- */
@@ -216,11 +217,11 @@ function buildFigure(){
   };
 }
 
-/* ---- 하얀 방과 일곱 개의 문 ---- */
+/* ---- 하얀 방과 여덟 개의 문 ---- */
 /* 문은 서 있는 자리(0,2)를 반원으로 감싼다. 각 문은 가운데를 바라보고, 다가서는 자리(ax,az)는 문 앞 2.4 */
 const HUB_C={x:0,z:2}, HUB_R=8.5;
 const DOORS=REALMS.map((r,i)=>{
-  const th=(i-(REALMS.length-1)/2)*.52, sn=Math.sin(th), cs=Math.cos(th);
+  const th=(i-(REALMS.length-1)/2)*Math.min(.52,3.12/(REALMS.length-1)), sn=Math.sin(th), cs=Math.cos(th);
   const x=HUB_C.x+sn*HUB_R, z=HUB_C.z-cs*HUB_R;
   return {realm:r,x,z,ry:-th,w:2.2,h:4.5,ax:x-sn*2.4,az:z+cs*2.4};
 });
@@ -287,6 +288,17 @@ const DOOR_PAINT={
     g.fillStyle='#17110d'; g.beginPath(); g.moveTo(0,0); g.lineTo(100,0); g.quadraticCurveTo(70,70,84,140); g.quadraticCurveTo(40,220,60,340); g.lineTo(0,h); g.fill(); g.beginPath(); g.moveTo(w,0); g.lineTo(156,0); g.quadraticCurveTo(186,60,170,140); g.quadraticCurveTo(216,230,196,340); g.lineTo(w,h); g.fill();
     g.fillStyle='#3a2c22'; g.beginPath(); g.moveTo(0,420); g.quadraticCurveTo(128,360,w,420); g.lineTo(w,h); g.lineTo(0,h); g.fill();
     [[70,400,14,'#f4c36b'],[96,414,9,'#7fe0d2'],[168,404,12,'#f4c36b'],[190,420,8,'#ffd9a0']].forEach(([x,y,s,c])=>{ g.fillStyle=c; g.globalAlpha=.9; g.beginPath(); g.moveTo(x,y-s*2.2); g.lineTo(x+s*.7,y); g.lineTo(x,y+s*.3); g.lineTo(x-s*.7,y); g.closePath(); g.fill(); g.globalAlpha=1; });
+  },
+  field(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,300); gr.addColorStop(0,'#3c82cf'); gr.addColorStop(1,'#cfe4ee'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.fillStyle='#3f6e3a'; g.beginPath(); g.moveTo(90,282); g.quadraticCurveTo(170,236,w,240); g.lineTo(w,300); g.lineTo(90,300); g.fill();
+    g.fillStyle='#5f8f4a'; for(let i=0;i<9;i++){ g.beginPath(); g.arc(10+i*30,292+(i%2)*3,14+(i%3)*3,0,TAU); g.fill(); }
+    gr=g.createLinearGradient(0,296,0,h); gr.addColorStop(0,'#b9b073'); gr.addColorStop(1,'#cdbd7c'); g.fillStyle=gr; g.fillRect(0,296,w,h);
+    g.fillStyle='#78ad48'; g.beginPath(); g.moveTo(122,300); g.lineTo(136,300); g.lineTo(170,h); g.lineTo(96,h); g.closePath(); g.fill();
+    const Rr=rng(8);
+    g.lineWidth=1.2; for(let i=0;i<220;i++){ const x=Rr()*w, y=300+Rr()*(h-300), L=8+(y-300)*.12*Rr()+6; g.strokeStyle=Rr()<.65?'rgba(214,198,132,.95)':'rgba(110,150,70,.9)'; g.beginPath(); g.moveTo(x,y); g.lineTo(x+(Rr()-.5)*3,y-L); g.stroke(); }
+    g.strokeStyle='rgba(235,226,196,.95)'; g.lineWidth=1.3;
+    [[200,330,70],[228,350,64],[176,350,56],[40,340,58]].forEach(([x,y,L])=>{ g.beginPath(); g.moveTo(x,y+L); g.quadraticCurveTo(x+4,y,x-12,y+8); g.stroke(); g.lineWidth=3; g.beginPath(); g.moveTo(x-10,y+6); g.lineTo(x-14,y+18); g.stroke(); g.lineWidth=1.3; });
   },
   rain(g,w,h,R){
     let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#9fb3b0'); gr.addColorStop(1,'#d5e1dc'); g.fillStyle=gr; g.fillRect(0,0,w,h);

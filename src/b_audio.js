@@ -299,6 +299,16 @@ const Sound=(()=>{
       sampleLoop(sc,'snd/valley.m4a',5.2,()=>syn.gain.setTargetAtTime(0,ctx.currentTime,.8));
       mk.every(sc,5,12,()=>bird(sc));
     },
+    field(sc){
+      /* 들판: 풀잎을 스치는 잔잔한 바람이 밀려왔다 물러간다 */
+      const bp=mk.filt('bandpass',900,.7);
+      const w=mk.bed(sc,noiseW,[bp,mk.filt('lowpass',3800)],.05);
+      mk.lfo(sc,.07,.03,w.gain); mk.lfo(sc,.05,300,bp.frequency);
+      const hiss=mk.bed(sc,noiseW,[mk.filt('highpass',3500)],.012);
+      mk.lfo(sc,.09,.008,hiss.gain);
+      mk.bed(sc,noiseB,[mk.filt('lowpass',260)],.05);
+      mk.every(sc,14,30,()=>bird(sc));
+    },
     cave(sc){
       [55,82.4,110.3].forEach((f,i)=>{
         const o=mk.osc(sc,'sine',f), g=mk.gain(.045);
