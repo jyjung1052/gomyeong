@@ -59,7 +59,7 @@ const Together=(()=>{
     if(started) return; started=true;
     try{
       if(window.claude&&window.claude.use) room=await window.claude.use('room');
-      else room=await PeerRoom.open();
+      else room=await MqttRoom.open();
       if(!room) return;
       room.onPeers(ch=>apply(ch.peers),()=>{ room=null; });
       apply(room.peers());

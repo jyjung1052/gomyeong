@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p dist
-{ cat src/b_audio.js; echo "(()=>{"; cat src/c3_core.js src/c3_geo.js src/c3_scenes.js src/c3_sea.js src/c3_rain.js src/c3_valley.js src/e3_peer.js src/e4_room.js src/d3_main.js; echo "})();"; } > dist/app.js
+{ cat src/b_audio.js; echo "(()=>{"; cat src/c3_core.js src/c3_geo.js src/c3_scenes.js src/c3_sea.js src/c3_rain.js src/c3_valley.js src/e3_mqtt.js src/e4_room.js src/d3_main.js; echo "})();"; } > dist/app.js
 node --check dist/app.js
 { cat src/a_head.html; echo "<script>"; cat dist/app.js; echo "</script>"; } > dist/index.html
 touch dist/.nojekyll
