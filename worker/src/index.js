@@ -1,5 +1,5 @@
 import {sanitize,allow} from './validate.js';
-const MAX_ALL=60, MAX_PER_IP=4, MAX_BYTES=400, STALE_MS=15000;
+const MAX_ALL=100, MAX_PER_IP=4, MAX_BYTES=400, STALE_MS=15000;
 
 export default {
   async fetch(req,env){
