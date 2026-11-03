@@ -24,11 +24,13 @@ jobs:
         with:
           node-version: 20
       - name: Build
+        env:
+          RELAY_URL: ${{ vars.RELAY_URL }}
         run: ./scripts/build.sh
       - name: Smoke test (7개 장면, 눕기, 접속 신호)
         run: node src/stub.js | tail -3
-      - name: 서로 보이기(MqttRoom) 시험
-        run: node test/mqttroom.test.js
+      - name: 서로 보이기 · 중계 서버 검사 시험
+        run: node test/relay.test.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

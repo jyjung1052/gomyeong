@@ -1,0 +1,25 @@
+name: Deploy relay (Cloudflare Workers)
+
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', '.github/workflows/deploy-relay.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 시크릿이 없으면 건너뜀
+        if: env.CF_TOKEN == ''
+        run: echo "CLOUDFLARE_API_TOKEN 이 없어 중계 서버 배포를 건너뜁니다."
+      - name: Deploy
+        if: env.CF_TOKEN != ''
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
