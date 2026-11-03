@@ -242,6 +242,8 @@ const Sound=(()=>{
     },
     /* 소나기: 숲 위로 '쏴아아' 하고 쉬지 않고 쏟아지는 굵은 비. 가끔 더 세게 몰아친다 */
     rain(sc){
+      /* 실제 장대비 녹음(사용자 제공). 받기 전·실패 시에는 합성 빗소리가 대신 내린다 */
+      const realBus=sc.bus, syn=ctx.createGain(); syn.gain.value=1; syn.connect(realBus); sc.bus=syn;
       const hiss=mk.bed(sc,noiseW,[mk.filt('highpass',600),mk.filt('lowpass',9500)],.26);
       mk.lfo(sc,.08,.025,hiss.gain); mk.lfo(sc,.27,.015,hiss.gain);
       const sheet=mk.bed(sc,noiseW,[mk.filt('bandpass',2300,.35)],.2);
@@ -259,9 +261,12 @@ const Sound=(()=>{
       sc.timers.push(setTimeout(surge,5000));
       mk.every(sc,16,28,surge);
       /* 연잎에 부딪는 소리는 낮고 은은하게(톡 소리만, 뽁뽁거리는 소리는 없음) */
-      mk.every(sc,.012,.04,()=>hit(sc,700,1600,1.1,rnd(.02,.06),rnd(.025,.06)));   /* 바닥 탁탁탁 */
-      mk.every(sc,.01,.035,()=>hit(sc,2600,6500,1.4,rnd(.012,.04),rnd(.02,.05)));  /* 나뭇잎 타닥 */
-      mk.every(sc,.15,.5,()=>hit(sc,300,700,.8,rnd(.05,.1),rnd(.06,.12)));         /* 굵은 빗방울이 지붕·바닥을 칠 때 */
+      sc.bus=realBus; let real=false;
+      sampleLoop(sc,'snd/rain.m4a',4.2,()=>{ real=true; syn.gain.setTargetAtTime(0,ctx.currentTime,.8); });
+      const hitSyn=(...a)=>{ if(real) return; const b=sc.bus; sc.bus=syn; hit(sc,...a); sc.bus=b; };
+      mk.every(sc,.012,.04,()=>hitSyn(700,1600,1.1,rnd(.02,.06),rnd(.025,.06)));   /* 바닥 탁탁탁 */
+      mk.every(sc,.01,.035,()=>hitSyn(2600,6500,1.4,rnd(.012,.04),rnd(.02,.05)));  /* 나뭇잎 타닥 */
+      mk.every(sc,.15,.5,()=>hitSyn(300,700,.8,rnd(.05,.1),rnd(.06,.12)));         /* 굵은 빗방울이 지붕·바닥을 칠 때 */
       sc.timers.push(setTimeout(()=>thunder(sc),9000));
       mk.every(sc,35,80,()=>thunder(sc));
     },
