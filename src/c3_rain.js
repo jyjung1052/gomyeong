@@ -170,7 +170,7 @@ function buildRain(){
     /* 방석 */
     [[-1.9,-1.55,'#7f4f46',.1],[-1.05,-1.9,'#5f6f58',-.2],[-1.6,-0.75,'#8a6d4c',.3]].forEach(([dx,dz,c,rot])=>{
       const cu=mesh(new THREE.CylinderGeometry(.33,.35,.08,24),M(c,{shininess:3}),cx+dx,H+.13,dz); cu.scale.set(1,1,.96); cu.rotation.y=rot; g.add(cu);
-      g.add(mesh(new THREE.TorusGeometry(.31,.022,6,24),M(c,{shininess:3}),cx+dx,H+.13,dz)).rotation.x=Math.PI/2;
+      const tr=mesh(new THREE.TorusGeometry(.31,.022,6,24),M(c,{shininess:3}),cx+dx,H+.13,dz); tr.rotation.x=Math.PI/2; g.add(tr);
     });
     /* 지붕 */
     const rg=new THREE.CylinderGeometry(.35,(W/2+.7)/Math.cos(Math.PI/4),RH.RISE,4,10,false); rg.rotateY(Math.PI/4);
