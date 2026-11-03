@@ -262,10 +262,12 @@ const Sound=(()=>{
       mk.every(sc,16,28,surge);
       /* 연잎에 부딪는 소리는 낮고 은은하게(톡 소리만, 뽁뽁거리는 소리는 없음) */
       sc.bus=realBus; let real=false;
-      sampleLoop(sc,'snd/rain.m4a',4.2,()=>{ real=true; syn.gain.setTargetAtTime(0,ctx.currentTime,.8); });
-      const hitSyn=(...a)=>{ if(real) return; const b=sc.bus; sc.bus=syn; hit(sc,...a); sc.bus=b; };
+      sampleLoop(sc,'snd/rain2.m4a',4.2,()=>{ real=true; syn.gain.setTargetAtTime(0,ctx.currentTime,.8); });
+      /* 녹음이 흐르는 동안에도 바닥·잎을 치는 빗방울을 촘촘히 얹는다 */
+      const hitSyn=(...a)=>{ if(real){ a[3]*=.8; hit(sc,...a); return; } const b=sc.bus; sc.bus=syn; hit(sc,...a); sc.bus=b; };
       mk.every(sc,.012,.04,()=>hitSyn(700,1600,1.1,rnd(.02,.06),rnd(.025,.06)));   /* 바닥 탁탁탁 */
       mk.every(sc,.01,.035,()=>hitSyn(2600,6500,1.4,rnd(.012,.04),rnd(.02,.05)));  /* 나뭇잎 타닥 */
+      mk.every(sc,.008,.025,()=>hitSyn(1800,4200,1.6,rnd(.015,.045),rnd(.012,.03)));  /* 바닥 타다닥(또렷한 빗방울) */
       mk.every(sc,.15,.5,()=>hitSyn(300,700,.8,rnd(.05,.1),rnd(.06,.12)));         /* 굵은 빗방울이 지붕·바닥을 칠 때 */
       sc.timers.push(setTimeout(()=>thunder(sc),9000));
       mk.every(sc,35,80,()=>thunder(sc));
