@@ -17,7 +17,7 @@ const REALMS=[
   {id:'mountain',name:'산',short:'정상의 바람',line:'정상의 바람과 먼 종소리',color:'#8fa0b4'},
   {id:'cave',name:'동굴',short:'물방울',line:'물방울과 울림',color:'#b88a52'},
   {id:'rain',name:'원두막',short:'빗소리',line:'처마에 듣는 빗소리',color:'#6f8f8a'},
-  {id:'field',name:'들판',short:'바람과 들꽃',line:'풀잎을 스치는 바람',color:'#79b04f'}
+  {id:'field',name:'들녘',short:'바람과 풀숲',line:'풀잎이 사그락이는 바람',color:'#a9a05a'}
 ];
 
 /* ---- 렌더러 ---- */

@@ -300,14 +300,33 @@ const Sound=(()=>{
       mk.every(sc,5,12,()=>bird(sc));
     },
     field(sc){
-      /* 들판: 풀잎을 스치는 잔잔한 바람이 밀려왔다 물러간다 */
-      const bp=mk.filt('bandpass',900,.7);
-      const w=mk.bed(sc,noiseW,[bp,mk.filt('lowpass',3800)],.05);
-      mk.lfo(sc,.07,.03,w.gain); mk.lfo(sc,.05,300,bp.frequency);
-      const hiss=mk.bed(sc,noiseW,[mk.filt('highpass',3500)],.012);
-      mk.lfo(sc,.09,.008,hiss.gain);
-      mk.bed(sc,noiseB,[mk.filt('lowpass',260)],.05);
-      mk.every(sc,14,30,()=>bird(sc));
+      /* 들녘: 바람이 밀려올 때마다 풀숲이 '사그락' 스치고, 잦아들면 조용해진다 */
+      const gust=mk.gain(.35); gust.connect(sc.bus);                       // 바람 세기(0~1)
+      const real=sc.bus; sc.bus=gust;
+      const bp=mk.filt('bandpass',650,.6);
+      const w=mk.bed(sc,noiseB,[bp],.42); mk.lfo(sc,.05,220,bp.frequency);  // 낮은 바람
+      const air=mk.bed(sc,noiseW,[mk.filt('bandpass',1500,.5),mk.filt('lowpass',4000)],.16);
+      const rus=mk.bed(sc,noiseW,[mk.filt('highpass',3200),mk.filt('lowpass',9000)],.08);  // 풀잎 스치는 결
+      mk.lfo(sc,.9,.03,rus.gain);
+      sc.bus=real;
+      let gustOn=false;
+      const blow=()=>{
+        if(sc.dead) return;
+        const t0=ctx.currentTime, peak=rnd(.75,1), up=rnd(1.2,2.2), hold=rnd(2,5);
+        gust.gain.setTargetAtTime(peak,t0,up/3); gustOn=true;
+        sc.timers.push(setTimeout(()=>{ if(sc.dead) return; gust.gain.setTargetAtTime(rnd(.22,.4),ctx.currentTime,rnd(.8,1.6)); gustOn=false; },(up+hold)*1000));
+        sc.timers.push(setTimeout(blow,(up+hold+rnd(4,10))*1000));
+      };
+      sc.timers.push(setTimeout(blow,2500));
+      /* 사그락: 마른 풀잎끼리 부딪는 아주 짧고 바삭한 소리 알갱이. 바람이 셀 때 촘촘해진다 */
+      const grain=()=>hit(sc,2600,7500,.9,rnd(.016,.055)*(gustOn?1.4:.8),rnd(.012,.035));
+      const tick=()=>{
+        if(sc.dead) return;
+        const n=gustOn?Math.floor(rnd(1,4)):(Math.random()<.35?1:0);
+        for(let i=0;i<n;i++) sc.timers.push(setTimeout(grain,rnd(0,40)));
+        sc.timers.push(setTimeout(tick,rnd(25,60)));
+      };
+      tick();
     },
     cave(sc){
       [55,82.4,110.3].forEach((f,i)=>{
