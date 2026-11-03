@@ -265,13 +265,13 @@ const Sound=(()=>{
       mk.every(sc,16,28,surge);
       /* 연잎에 부딪는 소리는 낮고 은은하게(톡 소리만, 뽁뽁거리는 소리는 없음) */
       sc.bus=realBus; let real=false;
-      sampleLoop(sc,'snd/rain3.m4a',4.6,()=>{ real=true; syn.gain.setTargetAtTime(0,ctx.currentTime,.8); });
+      sampleLoop(sc,'snd/rain4.m4a',4.6,()=>{ real=true; syn.gain.setTargetAtTime(0,ctx.currentTime,.8); });
       /* 받기 전에는 합성 빗방울, 녹음이 흐르면 듬성듬성 또렷한 '탁'만 얹는다(촘촘하면 바람소리처럼 뭉친다) */
       const synHit=(...a)=>{ if(real) return; const b=sc.bus; sc.bus=syn; hit(sc,...a); sc.bus=b; };
       mk.every(sc,.012,.04,()=>synHit(700,1600,1.1,rnd(.02,.06),rnd(.025,.06)));
       mk.every(sc,.01,.035,()=>synHit(2600,6500,1.4,rnd(.012,.04),rnd(.02,.05)));
-      mk.every(sc,.05,.16,()=>{ if(real) hit(sc,900,2600,1.3,rnd(.03,.08),rnd(.015,.035)); });   /* 바닥 탁, 타닥 */
-      mk.every(sc,.25,.7,()=>{ if(real) hit(sc,500,1100,1.0,rnd(.04,.08),rnd(.02,.045)); });        /* 굵은 빗방울 툭 */
+      mk.every(sc,.03,.1,()=>{ if(real) hit(sc,1000,2800,1.3,rnd(.03,.07),rnd(.008,.02)); });   /* 바닥 탁, 타닥 */
+      mk.every(sc,.25,.7,()=>{ if(real) hit(sc,600,1300,1.0,rnd(.04,.07),rnd(.012,.025)); });        /* 굵은 빗방울 툭 */
       sc.timers.push(setTimeout(()=>thunder(sc),9000));
       mk.every(sc,35,80,()=>thunder(sc));
     },
