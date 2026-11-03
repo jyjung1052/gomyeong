@@ -1,15 +1,15 @@
 /* ---- 비 오는 원두막: 연꽃 연못 위에 같은 원두막 세 채가 지붕 있는 다리로 이어져 있다 ---- */
-const RH={W:6.6,D:5.4,H:1.5,EY:4.9,RISE:2.6,L:8,BEY:4.2,BRISE:.9};
+const RH={W:9,D:7,H:1.5,EY:4.9,RISE:2.6,L:7,BEY:4.2,BRISE:.9};
 const RXD=RH.W+RH.L;                 // 이웃한 원두막 중심 사이 거리
-const HUTS=[-RXD,0,RXD];
-const BRIDGES=[-RXD/2,RXD/2];
+const HUTS=[-2*RXD,-RXD,0,RXD,2*RXD];
+const BRIDGES=[-1.5*RXD,-.5*RXD,.5*RXD,1.5*RXD];
 /* (x,z) 위로 지붕이 있으면 그 높이, 없으면 0 */
 function coverY(x,z){
-  for(let i=0;i<3;i++){
+  for(let i=0;i<HUTS.length;i++){
     const ax=Math.abs(x-HUTS[i])/(RH.W/2+.7), az=Math.abs(z)/(RH.D/2+.7), m=Math.max(ax,az);
     if(m<1) return RH.EY+RH.RISE*(1-m);
   }
-  for(let i=0;i<2;i++){
+  for(let i=0;i<BRIDGES.length;i++){
     if(Math.abs(x-BRIDGES[i])<RH.L/2&&Math.abs(z)<1.5) return RH.BEY+RH.BRISE*(1-Math.abs(z)/1.5);
   }
   return 0;
@@ -17,7 +17,7 @@ function coverY(x,z){
 /* 마루와 다리가 차지하는 자리(+여유). 연잎과 연꽃은 이 밖에만 심는다 */
 function blocked(x,z,m){
   if(Math.abs(z)<LAND_END-.4+m) return true;
-  for(let i=0;i<3;i++) if(Math.abs(x-HUTS[i])<RH.W/2+1+m&&Math.abs(z)<RH.D/2+1+m) return true;
+  for(let i=0;i<HUTS.length;i++) if(Math.abs(x-HUTS[i])<RH.W/2+1+m&&Math.abs(z)<RH.D/2+1+m) return true;
   return false;
 }
 /* 원두막이 서 있는 흙둑: 가로로 길게 놓여 연못을 앞뒤 두 밭으로 가른다 */
@@ -165,7 +165,7 @@ function buildRain(){
     g.add(box(W-.4,.16,.16,wood,cx,EY-.1,0));
     for(let i=0;i<13;i++) board.push({x:cx,y:H+.04,z:-D/2+.28+i*.4,sx:1,sy:1,sz:1,c:choice(R,['#8a6d4c','#7f6444','#917454','#76593c']),w:W-.1});
     hutRail(cx,-pz); hutRail(cx,pz);
-    sideRail(cx,-1,hi>0); sideRail(cx,1,hi<2);
+    sideRail(cx,-1,hi>0); sideRail(cx,1,hi<HUTS.length-1);
     const mat=mesh(new THREE.PlaneGeometry(3.2,2.2),M('#ffffff',{map:matTex,shininess:2}),cx+.3,H+.09,-.9); mat.rotation.x=-Math.PI/2; g.add(mat);
     /* 소반과 찻주전자 */
     const tb=new THREE.Group(); tb.position.set(cx-1.9,H+.08,-1.6);
@@ -191,7 +191,7 @@ function buildRain(){
       const e=k%4; let x,z;
       if(e===0){ x=cx+(R()-.5)*(W+1.2); z=D/2+.7; }
       else if(e===1){ x=cx+(R()-.5)*(W+1.2); z=-D/2-.7; }
-      else if(e===2&&hi===2){ x=cx+W/2+.7; z=(R()-.5)*(D+1); }
+      else if(e===2&&hi===HUTS.length-1){ x=cx+W/2+.7; z=(R()-.5)*(D+1); }
       else if(e===3&&hi===0){ x=cx-W/2-.7; z=(R()-.5)*(D+1); }
       else { x=cx+(R()-.5)*(W+1.2); z=(R()<.5?1:-1)*(D/2+.7); }
       eaves.push({x,z,top:EY,y:EY,vy:0,wait:R()*1.6});
@@ -235,7 +235,7 @@ function buildRain(){
 
   const steam=points(8,0,'#e8eef2',.22,null,i=>[0,H+.6+i*.08,0]); g.add(steam);
   const sp2=steam.geometry.attributes.position;
-  const tx0=HUTS[1]-1.9+.14, tz0=-1.6;
+  const tx0=HUTS[2]-1.9+.14, tz0=-1.6;
 
   /* 낮게 깔리는 안개 */
   const mistA=softTex(22,'205,212,216',.26), mistB=softTex(18,'190,200,206',.22);

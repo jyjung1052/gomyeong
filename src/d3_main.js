@@ -111,7 +111,10 @@ function enterRealm(realm){
     S.mode='scene'; S.realm=realm; S.sitTime=0; lastTimerSec=-1;
     activate(w);
     const m=S.me; m.sitting=false; m.walking=false; m.pending=null;
-    m.x=w.spawn.x; m.z=w.spawn.z; m.tx=m.x; m.tz=m.z; m.heading=Math.PI;
+    m.x=w.spawn.x; m.z=w.spawn.z;
+    /* 여럿이 한곳에 겹쳐 서지 않도록 들어서는 자리를 조금씩 흩는다 */
+    if(w.spawnJ){ const J=w.spawnJ; if(J.length===1){ const a=Math.random()*TAU, r=Math.sqrt(Math.random())*J[0]; m.x+=Math.cos(a)*r; m.z+=Math.sin(a)*r; } else { m.x+=(Math.random()*2-1)*J[0]; m.z+=(Math.random()*2-1)*J[1]; } }
+    m.tx=m.x; m.tz=m.z; m.heading=Math.PI;
     S.cam.yaw=0; S.cam.pitch=S.cam.pitchGoal=w.pitch||.32; S.cam.zoom=1;
     clampMe(); snapCam();
     Sound.setSeated(false); Sound.enter(realm.id);

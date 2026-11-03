@@ -103,9 +103,25 @@ function buildForest(){
   const ground=groundPlane(90,0,96,0,'#f2f6fb',(x,z)=>.1*Math.sin(x*.3)*Math.cos(z*.27)+.07*nz(x*.35,0,z*.35)+.03*nz(x*1.3,0,z*1.3),true);
   ground.material=M('#f2f6fb',{shininess:14,specular:0x4a5058}); g.add(ground);
   const WIN=['#ffffff','#f4f8ff','#e9f0f8','#ffffff'];
-  g.add(instances(pineSnowGeo(),VC(),ringScatter(R,150,17,68,(x,z)=>{ const s=.85+R()*1.0; return {x,y:-.05,z,sx:s,sy:s*(.9+R()*.4),sz:s,ry:R()*6,c:choice(R,WIN)}; })));
-  g.add(instances(bareTreeGeo(),VC(),ringScatter(R,90,15,66,(x,z)=>{ const s=.9+R()*.7; return {x,y:-.05,z,sx:s,sy:s,sz:s,ry:R()*6,c:'#ffffff'}; })));
-  g.add(instances(snowify(bushGeo(),.97,-.2),VC(),ringScatter(R,150,11,48,(x,z)=>{ const s=.5+R()*.9; return {x,y:.0,z,sx:s*1.2,sy:s*.9,sz:s*1.2,ry:R()*6,c:choice(R,WIN)}; })));
+  const FR=34;                       /* 걸을 수 있는 숲의 반지름 */
+  const avoid=[];
+  /* 숲 가장자리를 둘러싼 빽빽한 나무 */
+  g.add(instances(pineSnowGeo(),VC(),ringScatter(R,320,FR+3,96,(x,z)=>{ const s=.85+R()*1.0; return {x,y:-.05,z,sx:s,sy:s*(.9+R()*.4),sz:s,ry:R()*6,c:choice(R,WIN)}; })));
+  g.add(instances(bareTreeGeo(),VC(),ringScatter(R,170,FR+2,92,(x,z)=>{ const s=.9+R()*.7; return {x,y:-.05,z,sx:s,sy:s,sz:s,ry:R()*6,c:'#ffffff'}; })));
+  /* 숲 안쪽: 빈터를 두고 드문드문 선 나무(몸통은 피해 걷는다) */
+  const inner=(list,geo,n,sMin,sRng,colorFn)=>{
+    const its=[]; let guard=0;
+    while(its.length<n&&guard++<4000){
+      const a=R()*TAU, r=Math.sqrt(R())*(FR-1.5), x=Math.cos(a)*r, z=Math.sin(a)*r;
+      if(Math.hypot(x,z-2.5)<6) continue;                    /* 들어서는 자리는 비워 둔다 */
+      if(avoid.some(o=>Math.hypot(o.x-x,o.z-z)<2.6)) continue;
+      const s=sMin+R()*sRng; its.push({x,y:-.05,z,sx:s,sy:s*(.9+R()*.3),sz:s,ry:R()*6,c:colorFn()}); avoid.push({x,z,r:.5*s});
+    }
+    g.add(instances(geo,VC(),its));
+  };
+  inner(null,pineSnowGeo(),70,.85,.9,()=>choice(R,WIN));
+  inner(null,bareTreeGeo(),46,.9,.6,()=>'#ffffff');
+  g.add(instances(snowify(bushGeo(),.97,-.2),VC(),ringScatter(R,260,11,64,(x,z)=>{ const s=.5+R()*.9; return {x,y:.0,z,sx:s*1.2,sy:s*.9,sz:s*1.2,ry:R()*6,c:choice(R,WIN)}; })));
   const stones=[[-4,-4,1.1],[5,-2,.8],[-6,3,.9]].map(([x,z,s])=>({x,y:s*.25,z,sx:s*1.3,sy:s,sz:s*1.1,ry:x,c:'#c9d3dc'}));
   g.add(instances(rockGeo(),VC({vertexColors:false}),stones));
   const caps=[[-4,-4,1.1],[5,-2,.8],[-6,3,.9]].map(([x,z,s])=>({x,y:s*.62,z,sx:s*1.15,sy:s*.4,sz:s*.98,ry:x,c:'#ffffff'}));
@@ -115,18 +131,19 @@ function buildForest(){
   /* 내리는 눈: 또렷한 눈송이 두 겹(작은 것 많이, 큰 것 가끔) */
   const flakeTex=canvasTex(32,32,(c,w,h)=>{ const gr=c.createRadialGradient(16,16,0,16,16,16); gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.55,'rgba(255,255,255,.95)'); gr.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=gr; c.fillRect(0,0,w,h); });
   const mkSnow=(n,size)=>{
-    const p=points(n,0,'#ffffff',size,flakeTex,()=>[(R()-.5)*36,R()*14,(R()-.5)*36]);
+    const p=points(n,0,'#ffffff',size,flakeTex,()=>[(R()-.5)*44,R()*14,(R()-.5)*44]);
     p.material.blending=THREE.NormalBlending; p.material.opacity=1; p.material.alphaTest=.05; g.add(p); return p;
   };
   const snowA=mkSnow(reduce?120:280,.12), snowB=mkSnow(reduce?16:50,.24);
   const flakes=[snowA,snowB].map((pt,k)=>({pos:pt.geometry.attributes.position,n:pt.geometry.attributes.position.count,v:Float32Array.from({length:pt.geometry.attributes.position.count},()=>(k?1.0:.5)+R()*.8)}));
-  return {group:g,fog:{c:0xb2c0cd,n:8,f:58},bg:0xb2c0cd,bounds:{circle:[0,0,10]},avoid:[],spawn:{x:0,z:2.5},
-    update(t,dt){
+  return {group:g,fog:{c:0xb2c0cd,n:8,f:70},bg:0xb2c0cd,bounds:{circle:[0,0,FR]},avoid,spawn:{x:0,z:2.5},spawnJ:[22],
+    update(t,dt,me){
       const s=spd();
+      if(me){ snowA.position.set(me.x,0,me.z); snowB.position.set(me.x,0,me.z); }
       flakes.forEach(f=>{
         for(let i=0;i<f.n;i++){
           let y=f.pos.getY(i)-dt*f.v[i]*s, x=f.pos.getX(i)+Math.sin(t*.6+i)*dt*.4*s+dt*.15*s;
-          if(y<0){ y+=14; x=(Math.random()-.5)*36; f.pos.setZ(i,(Math.random()-.5)*36); }
+          if(y<0){ y+=14; x=(Math.random()-.5)*44; f.pos.setZ(i,(Math.random()-.5)*44); }
           f.pos.setY(i,y); f.pos.setX(i,x);
         }
         f.pos.needsUpdate=true;
@@ -136,11 +153,14 @@ function buildForest(){
 
 /* ---- 호숫가: 울창한 숲 속의 호수 ---- */
 const LAKE_C=[0,-30], LAKE_R=[30,26];
+const LAKE_X=36, LAKE_Z0=-2.8, LAKE_Z1=28;          /* 걸을 수 있는 호숫가 마당 */
 function lakeH(x,z){
   const r=Math.hypot((x-LAKE_C[0])/LAKE_R[0],(z-LAKE_C[1])/LAKE_R[1]);
   let y=-.8+smooth(.9,1.05,r)*.8;
   y+=clamp(r-1.7,0,3)*1.8+.1*Math.sin(x*.12)*Math.cos(z*.1)*clamp(r-1,0,1);
-  return y;
+  /* 마당은 평평하게, 그 밖은 숲 언덕으로 */
+  const f=(1-smooth(LAKE_X-2,LAKE_X+14,Math.abs(x)))*(1-smooth(LAKE_Z1-2,LAKE_Z1+14,z))*smooth(LAKE_Z0-2,LAKE_Z0+1,z);
+  return lerp(y,.1,f);
 }
 function buildLake(){
   const g=new THREE.Group(), R=rng(12);
@@ -176,16 +196,16 @@ function buildLake(){
   }
   /* 숲: 호수를 빙 둘러 빽빽하게. 걷는 자리 앞쪽만 비워 둔다 */
   const pines=[], broads=[], bushes=[];
-  const inClear=(x,z)=>Math.abs(x)<14&&z>-6&&z<24;
+  const inClear=(x,z)=>Math.abs(x)<LAKE_X+2&&z>-6&&z<LAKE_Z1+2;
   const spot=(x,z)=>{ const r=Math.hypot((x-LAKE_C[0])/LAKE_R[0],(z-LAKE_C[1])/LAKE_R[1]); return r>1.07&&!inClear(x,z)&&Math.abs(x)<108&&z>-132&&z<76; };
-  for(let n=0,tries=0;n<250&&tries<4000;tries++){
+  for(let n=0,tries=0;n<330&&tries<6000;tries++){
     const a=R()*TAU, rho=1.07+Math.pow(R(),1.5)*1.6, x=LAKE_C[0]+Math.cos(a)*LAKE_R[0]*rho, z=LAKE_C[1]+Math.sin(a)*LAKE_R[1]*rho;
     if(!spot(x,z)) continue; n++;
     const s=1+R()*1.2, it={x,y:lakeH(x,z)-.1,z,sx:s,sy:s*(.9+R()*.4),sz:s,ry:R()*6,c:choice(R,TINT)};
     (R()<.68?pines:broads).push(it);
   }
-  for(let n=0,tries=0;n<90&&tries<1500;tries++){
-    const x=(R()<.5?-1:1)*(15+R()*16), z=-4+R()*28;
+  for(let n=0,tries=0;n<130&&tries<2500;tries++){
+    const x=(R()<.5?-1:1)*(LAKE_X+4+R()*22), z=-4+R()*46;
     if(!spot(x,z)) continue; n++;
     const s=.9+R()*.9, it={x,y:lakeH(x,z)-.1,z,sx:s,sy:s,sz:s,ry:R()*6,c:choice(R,TINT)};
     (R()<.55?pines:broads).push(it);
@@ -216,10 +236,10 @@ function buildLake(){
     const r=mesh(new THREE.RingGeometry(.9,1,48),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}),0,-.04,-12);
     r.rotation.x=-Math.PI/2; r.userData={age:9}; g.add(r); rings.push(r);
   }
-  const fly=()=>points(22,0,'#e6ff96',.5,null,()=>{ const x=(R()-.5)*60, z=-6+R()*26; return [x,.4+R()*3,z]; });
+  const fly=()=>points(60,0,'#e6ff96',.5,null,()=>{ const x=(R()-.5)*76, z=-6+R()*40; return [x,.4+R()*3,z]; });
   const fireA=fly(), fireB=fly(); g.add(fireA,fireB);
   let next=1.2, ri=0;
-  return {group:g,fog:{c:0x7c6b9a,n:22,f:170},bg:0x7c6b9a,bounds:{rect:[-12,12,-2.8,12]},avoid:[],spawn:{x:0,z:5},
+  return {group:g,fog:{c:0x7c6b9a,n:22,f:170},bg:0x7c6b9a,bounds:{rect:[-LAKE_X,LAKE_X,LAKE_Z0,LAKE_Z1]},avoid:[],spawn:{x:0,z:5},spawnJ:[30,10],
     update(t,dt){
       const s=spd();
       streaks.forEach((m,i)=>{ m.material.opacity=.3+.2*Math.sin(t*1.6*s+i*1.3); m.scale.x=1+.15*Math.sin(t*2*s+i); });
@@ -292,21 +312,21 @@ function buildMountain(){
     .forEach(([r,base,amp,cool,haze,notch],i)=>g.add(ridgeRing(r,base,amp,i*5.3+1,cool,haze,SUNAZ,notch)));
 
   /* 정상: 편평한 화강암 바위마당 */
-  const SR=9.8;
-  const pg=new THREE.RingGeometry(.01,SR,56,16); pg.rotateX(-Math.PI/2);
+  const SR=32;
+  const pg=new THREE.RingGeometry(.01,SR,112,44); pg.rotateX(-Math.PI/2);
   const pp=pg.attributes.position, pc=new Float32Array(pp.count*3), cc=new THREE.Color();
   const GR=new THREE.Color('#b9b8b0'), CR=new THREE.Color('#8d9094'), LI=new THREE.Color('#8f9d7c');
   for(let i=0;i<pp.count;i++){
     const x=pp.getX(i), z=pp.getZ(i), r=Math.hypot(x,z);
-    pp.setY(i,.05*Math.sin(x*.5)*Math.cos(z*.45)+.04*nz(x*.7,0,z*.7)-.5*smooth(8.6,SR,r));
+    pp.setY(i,.05*Math.sin(x*.5)*Math.cos(z*.45)+.04*nz(x*.7,0,z*.7)-.5*smooth(SR-1.2,SR,r));
     const crack=smooth(.55,.75,Math.abs(nz(x*.9,0,z*.9))*2);
-    cc.copy(GR).lerp(CR,crack*.6).lerp(LI,smooth(.55,.9,nz(x*.5+3,0,z*.5))*.5).lerp(CR,smooth(8,SR,r)*.5);
+    cc.copy(GR).lerp(CR,crack*.6).lerp(LI,smooth(.55,.9,nz(x*.5+3,0,z*.5))*.5).lerp(CR,smooth(SR-2,SR,r)*.5);
     const k=.95+.1*nz(x*2,0,z*2); pc[i*3]=cc.r*k; pc[i*3+1]=cc.g*k; pc[i*3+2]=cc.b*k;
   }
   pg.setAttribute('color',new THREE.BufferAttribute(pc,3)); pg.computeVertexNormals();
   g.add(new THREE.Mesh(pg,VC({shininess:6})));
   /* 정상 아래로 곤두박질치는 절벽 */
-  const cliffG=new THREE.CylinderGeometry(SR,46,230,56,26,true), cp=cliffG.attributes.position, ccol=new Float32Array(cp.count*3);
+  const cliffG=new THREE.CylinderGeometry(SR,SR+36,230,112,26,true), cp=cliffG.attributes.position, ccol=new Float32Array(cp.count*3);
   const CA=new THREE.Color('#c4c6c2'), CB=new THREE.Color('#6c747d');
   for(let i=0;i<cp.count;i++){
     const x=cp.getX(i), y=cp.getY(i), z=cp.getZ(i), a=Math.atan2(z,x), t=(y+115)/230;
@@ -333,8 +353,9 @@ function buildMountain(){
 
   /* 정상의 소나무, 바위, 돌탑, 정상석 */
   const avoid=[];
-  const boulders=[]; for(let i=0;i<10;i++){
-    const a=R()*TAU, r=6.8+R()*1.8, s=.5+R()*.9;
+  const boulders=[]; for(let i=0;i<46;i++){
+    const a=R()*TAU, r=i<16?SR-3.4+R()*1.8:Math.sqrt(R())*(SR-5), s=i<16?.5+R()*.9:.35+R()*.7;
+    if(i>=16&&(Math.hypot(Math.cos(a)*r+3.7,Math.sin(a)*r+3.3)<2||Math.hypot(Math.cos(a)*r,Math.sin(a)*r-2)<4)){ continue; }
     boulders.push({x:Math.cos(a)*r,y:s*.15,z:Math.sin(a)*r,sx:s*1.3,sy:s*.9,sz:s,ry:R()*6,c:choice(R,['#c8c6bd','#b9b8b0','#a7aaa6','#d2d0c6'])});
     avoid.push({x:Math.cos(a)*r,z:Math.sin(a)*r,r:s*1.1});
   }
@@ -343,7 +364,7 @@ function buildMountain(){
   g.add(instances(rockGeo(),VC({vertexColors:false}),cairn));
   avoid.push({x:-3.7,z:-3.3,r:.85});
   /* 솟는 안개와 매 */
-  const wisps=points(70,0,'#ffffff',2.4,null,()=>{ const a=R()*TAU, r=11+R()*26; return [Math.cos(a)*r,-85+R()*65,Math.sin(a)*r]; });
+  const wisps=points(70,0,'#ffffff',2.4,null,()=>{ const a=R()*TAU, r=SR+3+R()*30; return [Math.cos(a)*r,-85+R()*65,Math.sin(a)*r]; });
   wisps.material.opacity=.3; wisps.material.fog=false; g.add(wisps);
   const wp=wisps.geometry.attributes.position;
   const birds=[]; for(let i=0;i<4;i++){
@@ -352,7 +373,7 @@ function buildMountain(){
     l.add(mesh(new THREE.BoxGeometry(1.5,.05,.34),wm,-.75,0,0)); r.add(mesh(new THREE.BoxGeometry(1.5,.05,.34),wm,.75,0,0));
     b.add(l,r); b.userData={l,r,p:i*1.7,rad:34+i*9}; g.add(b); birds.push(b);
   }
-  return {group:g,fog:{c:0xf0d8c6,n:140,f:900},bg:0xf0d8c6,bounds:{circle:[0,0,7.6]},avoid,spawn:{x:0,z:2},pitch:.22,pitchSit:.1,
+  return {group:g,fog:{c:0xf0d8c6,n:140,f:900},bg:0xf0d8c6,bounds:{circle:[0,0,SR-2.6]},avoid,spawn:{x:0,z:2},spawnJ:[24],pitch:.22,pitchSit:.1,
     update(t,dt){
       const s=spd();
       clouds.forEach(c=>{ c.position.x=((((c.userData.x0+t*c.userData.v*s)+330)%660)+660)%660-330; });
@@ -369,34 +390,37 @@ function buildMountain(){
 
 /* ---- 동굴 ---- */
 function buildCave(){
-  const g=new THREE.Group(), R=rng(23);
+  const g=new THREE.Group(), R=rng(23), CV=44;
   g.add(new THREE.AmbientLight(0x3e4c62,1.9));
   g.add(new THREE.HemisphereLight(0x4a5b78,0x1c2028,.5));
-  const wallG=new THREE.CylinderGeometry(19,19,26,64,18,true), wp=wallG.attributes.position;
+  const wallG=new THREE.CylinderGeometry(CV,CV,26,96,18,true), wp=wallG.attributes.position;
   for(let i=0;i<wp.count;i++){
     const x=wp.getX(i), z=wp.getZ(i), y=wp.getY(i), a=Math.atan2(z,x), k=1+.12*Math.sin(a*3+y*.4)+.06*Math.sin(a*7+y)+.04*nz(x*.3,y*.3,z*.3);
     wp.setX(i,x*k); wp.setZ(i,z*k);
   }
   wallG.computeVertexNormals();
   const wall=new THREE.Mesh(wallG,M('#38414f',{side:THREE.BackSide})); wall.position.y=11; g.add(wall);
-  const floor=groundPlane(19,0,72,0,'#3d444e',(x,z)=>.05*Math.sin(x*.7)*Math.cos(z*.6)+.04*nz(x*.5,0,z*.5),true); g.add(floor);
-  const ceil=mesh(new THREE.CircleGeometry(19,48),M('#232a34'),0,23,0); ceil.rotation.x=Math.PI/2; g.add(ceil);
+  const floor=groundPlane(CV,0,110,0,'#3d444e',(x,z)=>.05*Math.sin(x*.7)*Math.cos(z*.6)+.04*nz(x*.5,0,z*.5),true); g.add(floor);
+  const ceil=mesh(new THREE.CircleGeometry(CV,64),M('#232a34'),0,23,0); ceil.rotation.x=Math.PI/2; g.add(ceil);
   /* 빛이 들어오는 곳: 천장 틈 네 곳. 각각 다른 빛깔 */
   const SHAFTS=[
     {top:[5,22,-4],bot:[1,0,0],c:0xbcd8ff,i:1.6},
     {top:[-6,22,9],bot:[-4,0,5],c:0xffd9a8,i:1.2},
     {top:[9,22,10],bot:[6,0,6.5],c:0xb8f0e0,i:1.1},
-    {top:[-13,22,0],bot:[-8,0,0],c:0xd2c4ff,i:1.1}
+    {top:[-13,22,0],bot:[-8,0,0],c:0xd2c4ff,i:1.1},
+    {top:[20,22,-14],bot:[17,0,-10],c:0xbcd8ff,i:1,fake:1},{top:[-22,22,-14],bot:[-18,0,-10],c:0xffd9a8,i:1,fake:1},
+    {top:[26,22,10],bot:[22,0,8],c:0xb8f0e0,i:1,fake:1},{top:[-26,22,14],bot:[-22,0,11],c:0xd2c4ff,i:1,fake:1},
+    {top:[8,22,28],bot:[6,0,24],c:0xffd9a8,i:1,fake:1},{top:[-6,22,-30],bot:[-4,0,-25],c:0xb8f0e0,i:1,fake:1}
   ];
-  const tips=[]; for(let i=0;i<64;i++){ const a=R()*TAU, r=2+R()*15, l=3+R()*6.5, w=.5+R()*.6; tips.push({x:Math.cos(a)*r,y:23-l/2,z:Math.sin(a)*r,sx:w,sy:l,sz:w,ry:R()*3,rz:Math.PI,c:'#2a323d'}); }
+  const tips=[]; for(let i=0;i<150;i++){ const a=R()*TAU, r=2+R()*40, l=3+R()*6.5, w=.5+R()*.6; tips.push({x:Math.cos(a)*r,y:23-l/2,z:Math.sin(a)*r,sx:w,sy:l,sz:w,ry:R()*3,rz:Math.PI,c:'#2a323d'}); }
   g.add(instances(stalGeo(),VC({vertexColors:false}),tips));
   const nearShaft=(x,z,d)=>SHAFTS.some(s=>Math.hypot(x-s.bot[0],z-s.bot[2])<d);
   const avoid=[];
   let gd=0;
   /* 바위 */
   const rocks=[]; gd=0;
-  while(rocks.length<40&&gd++<800){
-    const a=R()*TAU, r=9.4+R()*2.4, x=Math.cos(a)*r, z=Math.sin(a)*r;
+  while(rocks.length<110&&gd++<2000){
+    const a=R()*TAU, r=9.4+Math.sqrt(R())*30, x=Math.cos(a)*r, z=Math.sin(a)*r;
     if(nearShaft(x,z,2.8)||Math.hypot(x-2,z-3)<2.4) continue;
     const s=.2+Math.pow(R(),2)*.4;
     rocks.push({x,y:s*.1,z,sx:s*1.25,sy:s*.9,sz:s,ry:R()*6,c:choice(R,['#3a424e','#444d5a','#313945','#4b5563'])});
@@ -406,7 +430,7 @@ function buildCave(){
   const vols=[];
   SHAFTS.forEach((s,i)=>{
     const top=new THREE.Vector3(...s.top), bot=new THREE.Vector3(...s.bot);
-    const spot=new THREE.SpotLight(s.c,s.i,50,.38,.6,1); spot.position.copy(top); spot.target.position.copy(bot); g.add(spot,spot.target);
+    if(!s.fake){ const spot=new THREE.SpotLight(s.c,s.i,50,.38,.6,1); spot.position.copy(top); spot.target.position.copy(bot); g.add(spot,spot.target); }
     const len=top.distanceTo(bot), dir=bot.clone().sub(top).normalize();
     const vol=mesh(new THREE.ConeGeometry(3.4,len,32,1,true),new THREE.MeshBasicMaterial({color:s.c,transparent:true,opacity:.1,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}),(top.x+bot.x)/2,(top.y+bot.y)/2,(top.z+bot.z)/2);
     vol.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().negate()); g.add(vol); vols.push(vol);
@@ -414,7 +438,7 @@ function buildCave(){
   });
   /* 빛나는 수정 무리 */
   const crys=[], cl=[], CC=['#7fe8ff','#b79bff','#ffc07a','#8dffc4','#ff9ec8'];
-  [[.9,9.6],[2.0,9.8],[3.2,9.5],[4.6,9.7],[5.45,9.6],[6.0,9.4]].forEach(([a,r],i)=>{
+  [[.9,9.6],[2.0,9.8],[3.2,9.5],[4.6,9.7],[5.45,9.6],[6.0,9.4],[.3,20],[1.4,26],[2.3,22],[3.1,28],[3.9,21],[4.5,27],[5.2,23],[5.9,29],[.7,33],[2.7,34],[4.2,33],[5.6,34]].forEach(([a,r],i)=>{
     const cx=Math.cos(a)*r, cz=Math.sin(a)*r, col=CC[i%CC.length];
     for(let k=0;k<5;k++){
       const s=.5+R()*.9;
@@ -427,18 +451,18 @@ function buildCave(){
   g.add(instances(cg,new THREE.MeshBasicMaterial({color:0xffffff}),crys));
   /* 바닥의 발광 버섯 */
   const fung=[]; gd=0;
-  while(fung.length<40&&gd++<400){
-    const a=R()*TAU, r=2.5+R()*8.5, x=Math.cos(a)*r, z=Math.sin(a)*r;
+  while(fung.length<170&&gd++<1500){
+    const a=R()*TAU, r=2.5+Math.sqrt(R())*36, x=Math.cos(a)*r, z=Math.sin(a)*r;
     const s=.06+R()*.1; fung.push({x,y:s*.8,z,sx:s,sy:s*.8,sz:s,c:choice(R,['#8ff0d6','#a6e8ff','#c9b8ff'])});
   }
   g.add(instances(new THREE.SphereGeometry(1,8,6),new THREE.MeshBasicMaterial({color:0xffffff}),fung));
   const moss=[]; for(let i=0;i<14;i++){
-    const a=R()*TAU, r=14+R()*3, y=.8+R()*5, m=mesh(new THREE.SphereGeometry(.14+R()*.1,12,9),B('#6fe8c8'),Math.cos(a)*r,y,Math.sin(a)*r); g.add(m); moss.push(m);
+    const a=R()*TAU, r=30+R()*3, y=.8+R()*5, m=mesh(new THREE.SphereGeometry(.14+R()*.1,12,9),B('#6fe8c8'),Math.cos(a)*r,y,Math.sin(a)*r); g.add(m); moss.push(m);
   }
-  const dust=points(90,0,'#d2e6ff',.14,null,i=>{ const s=SHAFTS[i%SHAFTS.length]; return [s.bot[0]+(R()-.5)*7,R()*20,s.bot[2]+(R()-.5)*7]; }); g.add(dust);
+  const dust=points(220,0,'#d2e6ff',.14,null,i=>{ const s=SHAFTS[i%SHAFTS.length]; return [s.bot[0]+(R()-.5)*7,R()*20,s.bot[2]+(R()-.5)*7]; }); g.add(dust);
   const dp=dust.geometry.attributes.position;
   let next=1.5;
-  return {group:g,fog:{c:0x0b0e14,n:10,f:50},bg:0x0b0e14,bounds:{circle:[0,0,11]},avoid,spawn:{x:2,z:3},
+  return {group:g,fog:{c:0x0b0e14,n:10,f:85},bg:0x0b0e14,bounds:{circle:[0,0,CV-12]},avoid,spawn:{x:2,z:3},spawnJ:[24],
     update(t,dt){
       const s=spd();
       vols.forEach((v,i)=>{ v.material.opacity=.085+.025*Math.sin(t*.4*s+i*1.7); });

@@ -182,7 +182,7 @@ function buildSea(){
   const clouds=[]; for(let i=0;i<9;i++){ const c=cloudCluster(0,35+R()*28,-250+R()*120,6+R()*8,.85); c.userData={x0:(R()-.5)*700,v:2+R()*3}; g.add(c); clouds.push(c); }
 
   let lx=0, lz=4, dist=0, side=1;
-  return {group:g,fog:{c:0xf1e0cf,n:60,f:420},bg:0xf1e0cf,bounds:{rect:[-75,75,-1.2,26]},avoid:avoidL,spawn:{x:0,z:4},
+  return {group:g,fog:{c:0xf1e0cf,n:60,f:420},bg:0xf1e0cf,bounds:{rect:[-75,75,-1.2,26]},avoid:avoidL,spawn:{x:0,z:6},spawnJ:[60,6],
     update(t,dt,me){
       const s=spd();
       /* 잔잔한 물결 */
