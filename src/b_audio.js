@@ -241,16 +241,12 @@ const Sound=(()=>{
       });
     },
     mountain(sc){
-      /* 새벽 산의 고요함: 사용자 영상 소리에서 새소리와 '고로록'(바람이 마이크 치는 저음)만 뺀 바탕 */
-      sampleLoop(sc,'snd/mtbed3.m4a',1.0);
-      /* 진짜 새소리는 처음엔 조용하다가 1~2분에 한 번, 짧게 */
-      const birds=['snd/birdA.m4a','snd/birdB.m4a','snd/birdC.m4a'];
-      if(typeof fetch==='function') birds.forEach(u=>loadBuf(u).catch(()=>{}));
-      const sing=()=>sampleOnce(sc,birds[Math.floor(Math.random()*birds.length)],1.0,rnd(-.6,.6));
-      const next=d=>sc.timers.push(setTimeout(()=>{ if(sc.dead) return; sing(); next(rnd(60,120)); },d*1000));
-      next(rnd(45,75));
-      sc.timers.push(setTimeout(()=>bell(sc),25000));
-      mk.every(sc,16,30,()=>bell(sc));
+      /* 산: 아주 작고 잔잔한 바람 + 1분 뒤 사용자 영상 소리 한 번. 그 밖의 소리는 없음 */
+      const bp=mk.filt('bandpass',480,1.0);
+      const w=mk.bed(sc,noiseB,[bp],.03);
+      mk.lfo(sc,.045,.012,w.gain); mk.lfo(sc,.037,180,bp.frequency);
+      if(typeof fetch==='function') loadBuf('snd/mtclip.m4a').catch(()=>{});
+      sc.timers.push(setTimeout(()=>{ if(!sc.dead) sampleOnce(sc,'snd/mtclip.m4a',1.0,0); },60000));
     },
     /* 소나기: 숲 위로 '쏴아아' 하고 쉬지 않고 쏟아지는 굵은 비. 가끔 더 세게 몰아친다 */
     rain(sc){
