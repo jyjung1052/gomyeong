@@ -6,3 +6,5 @@
 - 세션: 서버 없이 쿠키(`gomyeong3d_name`, `gomyeong3d_sid`)로 이름을 기억합니다.
 - 빌드: `./scripts/build.sh` → `dist/index.html`
 - 테스트: `node src/stub.js`
+- 함께 보이기: 서버 없이 WebRTC(PeerJS 공개 중계 서버로 연결만 주선)로 열어 둔 사람끼리 직접 연결합니다. 위치 정보만 주고받고 저장하지 않습니다. 최대 24명.
+- 시험: `node test/peerroom.test.js`
