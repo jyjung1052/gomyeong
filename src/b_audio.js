@@ -118,6 +118,30 @@ const Sound=(()=>{
     [[1,.05,9],[2.76,.025,6],[5.4,.012,4],[8.93,.006,2.5]].forEach(([m,p,d])=>tone(sc,base*m,base*m*.998,d,p,'sine',.8,0));
   }
 
+  /* 연잎에 빗방울이 떨어지는 소리: 잎 몸통이 울리는 낮은 '톡'과 물방울이 튀는 높은 '타닥' */
+  function leafTap(sc,loud){
+    if(!ctx||sc.dead) return;
+    const t=ctx.currentTime, pan=rnd(-.9,.9), pk=rnd(.012,.04)*(loud?1.8:1);
+    const s=ctx.createBufferSource(); s.buffer=noiseW;
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=rnd(1800,4200); bp.Q.value=rnd(1.2,3);
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(pk,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+rnd(.03,.07));
+    s.connect(bp); bp.connect(g);
+    const o=ctx.createOscillator(); o.type='sine'; const f0=rnd(240,420);
+    o.frequency.setValueAtTime(f0*1.25,t); o.frequency.exponentialRampToValueAtTime(f0,t+.05);
+    const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(pk*.9,t+.004); og.gain.exponentialRampToValueAtTime(.0001,t+.09);
+    o.connect(og);
+    const mix=ctx.createGain(); g.connect(mix); og.connect(mix);
+    let out=mix; if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=pan; mix.connect(p); out=p; }
+    out.connect(sc.bus);
+    s.start(t,rnd(0,3)); s.stop(t+.1); o.start(t); o.stop(t+.12);
+  }
+  /* 연못에 물방울이 떨어지는 소리: 위로 솟는 '똑/퐁' (큰 방울은 낮고 길게) */
+  function pondDrop(sc,big){
+    const f=big?rnd(380,720):rnd(700,1500);
+    tone(sc,f,f*(big?1.8:1.7),big?rnd(.1,.16):rnd(.05,.09),big?rnd(.03,.06):rnd(.012,.03),'sine',big?.7:.45,rnd(-.9,.9));
+    if(big) setTimeout(()=>tone(sc,f*.5,f*.62,.18,.025,'sine',.6,0),40);
+  }
+
   function thunder(sc){
     if(!ctx||sc.dead) return;
     const t=ctx.currentTime, s=ctx.createBufferSource(); s.buffer=noiseB; s.loop=true;
@@ -190,16 +214,32 @@ const Sound=(()=>{
       sc.timers.push(setTimeout(()=>bell(sc),3000));
       mk.every(sc,16,30,()=>bell(sc));
     },
+    /* 소나기: 한꺼번에 쏟아지는 굵은 비. 가끔 더 세게 몰아친다 */
     rain(sc){
-      mk.bed(sc,noiseW,[mk.filt('highpass',1800),mk.filt('lowpass',9000)],.05);
-      const pat=mk.bed(sc,noiseW,[mk.filt('bandpass',3400,.7)],.05);
-      mk.lfo(sc,.11,.012,pat.gain);
-      const rum=mk.bed(sc,noiseB,[mk.filt('lowpass',420)],.11);
-      mk.lfo(sc,.06,.03,rum.gain);
-      mk.bed(sc,noiseW,[mk.filt('bandpass',700,.8)],.012);
-      mk.every(sc,0.5,2.2,()=>tone(sc,rnd(1800,3200),rnd(1200,1800),.05,rnd(.01,.03),'sine',.25,rnd(-.8,.8)));
+      const hiss=mk.bed(sc,noiseW,[mk.filt('highpass',1400),mk.filt('lowpass',10500)],.1);
+      mk.lfo(sc,.09,.03,hiss.gain); mk.lfo(sc,.31,.018,hiss.gain);
+      const pat=mk.bed(sc,noiseW,[mk.filt('bandpass',3100,.6)],.085);
+      mk.lfo(sc,.13,.025,pat.gain); mk.lfo(sc,.47,.015,pat.gain);
+      const roof=mk.bed(sc,noiseW,[mk.filt('bandpass',900,.9)],.05);
+      mk.lfo(sc,.21,.02,roof.gain);
+      const rum=mk.bed(sc,noiseB,[mk.filt('lowpass',420)],.16);
+      mk.lfo(sc,.06,.05,rum.gain);
+      const beds=[[hiss,.1],[pat,.085],[roof,.05],[rum,.16]];
+      const surge=()=>{
+        if(sc.dead) return;
+        const t0=ctx.currentTime; beds.forEach(([g,v])=>g.gain.setTargetAtTime(v*1.5,t0,1.3));
+        sc.timers.push(setTimeout(()=>{ if(sc.dead) return; const t1=ctx.currentTime; beds.forEach(([g,v])=>g.gain.setTargetAtTime(v,t1,2.2)); },rnd(3500,7000)));
+      };
+      sc.timers.push(setTimeout(surge,4000));
+      mk.every(sc,14,26,surge);
+      /* 연잎 위의 빗방울, 연못에 떨어지는 물방울 */
+      mk.every(sc,.07,.14,()=>leafTap(sc,Math.random()<.18));
+      mk.every(sc,.08,.18,()=>leafTap(sc,false));
+      mk.every(sc,.1,.24,()=>pondDrop(sc,false));
+      mk.every(sc,.5,1.4,()=>pondDrop(sc,true));
+      mk.every(sc,.4,1.2,()=>tone(sc,rnd(1800,3200),rnd(1200,1800),.05,rnd(.01,.03),'sine',.25,rnd(-.8,.8)));
       sc.timers.push(setTimeout(()=>thunder(sc),9000));
-      mk.every(sc,45,95,()=>thunder(sc));
+      mk.every(sc,35,80,()=>thunder(sc));
     },
     valley(sc){
       const rush=mk.bed(sc,noiseW,[mk.filt('bandpass',1300,.45)],.08);
@@ -260,6 +300,7 @@ const Sound=(()=>{
     }
     if(kind==='eave'&&cur.name==='rain'){
       tone(cur,rnd(900,1500),rnd(450,650),.13,.09,'sine',.6,rnd(-.7,.7));
+      pondDrop(cur,true);
     }
     if(kind==='splash'&&(cur.name==='valley'||cur.name==='sea')){
       const t=ctx.currentTime, s=ctx.createBufferSource(); s.buffer=noiseW;
