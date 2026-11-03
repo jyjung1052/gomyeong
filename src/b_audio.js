@@ -131,6 +131,16 @@ const Sound=(()=>{
     out.connect(sc.bus);
     s.start(t,rnd(0,3)); s.stop(t+.1);
   }
+  /* 장대비: 바닥을 치는 '탁', 나뭇잎을 치는 '타닥' (소음만, 음높이 없음) */
+  function hit(sc,f0,f1,q,pk,dec){
+    if(!ctx||sc.dead) return;
+    const t=ctx.currentTime, s=ctx.createBufferSource(); s.buffer=noiseW;
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=rnd(f0,f1); bp.Q.value=q;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(pk,t+.002); g.gain.exponentialRampToValueAtTime(.0001,t+dec);
+    s.connect(bp); bp.connect(g);
+    let out=g; if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=rnd(-.95,.95); g.connect(p); out=p; }
+    out.connect(sc.bus); s.start(t,rnd(0,3)); s.stop(t+dec+.05);
+  }
   /* 연못에 물방울이 떨어지는 소리: 위로 솟는 '똑/퐁' (큰 방울은 낮고 길게) */
   function pondDrop(sc,big){
     const f=big?rnd(380,720):rnd(700,1500);
@@ -212,15 +222,15 @@ const Sound=(()=>{
     },
     /* 소나기: 숲 위로 '쏴아아' 하고 쉬지 않고 쏟아지는 굵은 비. 가끔 더 세게 몰아친다 */
     rain(sc){
-      const hiss=mk.bed(sc,noiseW,[mk.filt('highpass',700),mk.filt('lowpass',9500)],.17);
+      const hiss=mk.bed(sc,noiseW,[mk.filt('highpass',600),mk.filt('lowpass',9500)],.26);
       mk.lfo(sc,.08,.025,hiss.gain); mk.lfo(sc,.27,.015,hiss.gain);
-      const sheet=mk.bed(sc,noiseW,[mk.filt('bandpass',2300,.35)],.13);
+      const sheet=mk.bed(sc,noiseW,[mk.filt('bandpass',2300,.35)],.2);
       mk.lfo(sc,.11,.03,sheet.gain);
-      const leafy=mk.bed(sc,noiseW,[mk.filt('bandpass',4200,.5)],.05);
+      const leafy=mk.bed(sc,noiseW,[mk.filt('bandpass',4200,.5)],.09);
       mk.lfo(sc,.19,.02,leafy.gain);
-      const rum=mk.bed(sc,noiseB,[mk.filt('lowpass',520)],.2);
+      const rum=mk.bed(sc,noiseB,[mk.filt('lowpass',520)],.28);
       mk.lfo(sc,.06,.05,rum.gain);
-      const beds=[[hiss,.17],[sheet,.13],[leafy,.05],[rum,.2]];
+      const beds=[[hiss,.26],[sheet,.2],[leafy,.09],[rum,.28]];
       const surge=()=>{
         if(sc.dead) return;
         const t0=ctx.currentTime; beds.forEach(([g,v])=>g.gain.setTargetAtTime(v*1.35,t0,1.6));
@@ -229,7 +239,9 @@ const Sound=(()=>{
       sc.timers.push(setTimeout(surge,5000));
       mk.every(sc,16,28,surge);
       /* 연잎에 부딪는 소리는 낮고 은은하게(톡 소리만, 뽁뽁거리는 소리는 없음) */
-      mk.every(sc,.09,.2,()=>leafTap(sc,false));
+      mk.every(sc,.012,.04,()=>hit(sc,700,1600,1.1,rnd(.02,.06),rnd(.025,.06)));   /* 바닥 탁탁탁 */
+      mk.every(sc,.01,.035,()=>hit(sc,2600,6500,1.4,rnd(.012,.04),rnd(.02,.05)));  /* 나뭇잎 타닥 */
+      mk.every(sc,.15,.5,()=>hit(sc,300,700,.8,rnd(.05,.1),rnd(.06,.12)));         /* 굵은 빗방울이 지붕·바닥을 칠 때 */
       sc.timers.push(setTimeout(()=>thunder(sc),9000));
       mk.every(sc,35,80,()=>thunder(sc));
     },
@@ -289,9 +301,6 @@ const Sound=(()=>{
     if(!ctx||!cur) return;
     if(kind==='drip'&&cur.name==='cave'){
       tone(cur,rnd(1100,1700),rnd(700,900),.22,.16,'sine',1.1,rnd(-.3,.3));
-    }
-    if(kind==='eave'&&cur.name==='rain'){
-      tone(cur,rnd(900,1500),rnd(450,650),.13,.09,'sine',.6,rnd(-.7,.7));
     }
     if(kind==='splash'&&(cur.name==='valley'||cur.name==='sea')){
       const t=ctx.currentTime, s=ctx.createBufferSource(); s.buffer=noiseW;
