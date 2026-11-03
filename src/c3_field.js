@@ -6,9 +6,8 @@ function fieldH(x,z){
   const r=Math.hypot(x,z);
   let y=.55*nz(x*.025,0,z*.025)+.2*nz(x*.07,3,z*.07);
   /* 들판 가장자리 너머: 낮고 둥근 숲 언덕(한쪽이 더 높다) */
-  const far=smooth(62,170,r), side=.6+.4*Math.sin(Math.atan2(z,x)-2.3);
-  y+=far*(12+16*side+8*nz(x*.012,2,z*.012));
-  y+=smooth(190,320,r)*(24+16*nz(x*.006,9,z*.006));
+  /* 산·언덕 없이 지평선까지 이어지는 평평한 들녘(아주 완만한 기복만) */
+  y+=smooth(60,200,r)*1.5*nz(x*.008,2,z*.008);
   return y;
 }
 /* 풀 한 포기: 가늘고 곧은 줄기 여러 장. 누렇게 마른 줄기와 초록 줄기가 섞인다 */
@@ -17,7 +16,7 @@ function tuftGeo(seed,n,hMin,hMax,spread,dry){
   const GB=new THREE.Color('#3a6428'), GT=new THREE.Color('#9fc25c'), DB=new THREE.Color('#8b8a4c'), DT=new THREE.Color('#e3d397'), c=new THREE.Color();
   for(let b=0;b<n;b++){
     const isDry=R()<dry, a=R()*TAU, d=Math.sqrt(R())*spread, ox=Math.cos(a)*d, oz=Math.sin(a)*d;
-    const h=(isDry?1:.7)*(hMin+R()*(hMax-hMin)), w=isDry?.012+R()*.008:.018+R()*.014;
+    const h=(isDry?1:.8)*(hMin+R()*(hMax-hMin)), w=isDry?.012+R()*.008:.018+R()*.014;
     const fa=R()*TAU, lean=.03+R()*(isDry?.08:.2), lx=Math.cos(a)*lean*h, lz=Math.sin(a)*lean*h;
     const px=Math.cos(fa)*w, pz=Math.sin(fa)*w, B0=isDry?DB:GB, T0=isDry?DT:GT, k=.85+R()*.25;
     [[ox-px,0,oz-pz,0],[ox+px,0,oz+pz,0],[ox+lx,h,oz+lz,1]].forEach(([x,y,z,t])=>{
@@ -38,7 +37,7 @@ function plumeGeo(seed){
   const tri=(a,b,d,ca,cb,cd)=>{ [a,b,d].forEach(p=>{ pos.push(p[0],p[1],p[2]); nor.push(0,1,0); }); [ca,cb,cd].forEach(q=>col.push(q.r,q.g,q.b)); };
   const stalks=2+Math.floor(R()*2);
   for(let s=0;s<stalks;s++){
-    const H=1.35+R()*.75, dir=R()*TAU, dx=Math.cos(dir), dz=Math.sin(dir), bend=1.2+R()*1.6, N=10, w=.006;
+    const H=1.6+R()*.7, dir=R()*TAU, dx=Math.cos(dir), dz=Math.sin(dir), bend=1.2+R()*1.6, N=10, w=.006;
     const ox=(R()-.5)*.25, oz=(R()-.5)*.25;
     let x=0, y=0, prev=null; const seg=H/N, pts=[];
     for(let i=0;i<=N;i++){
@@ -115,8 +114,6 @@ function buildField(){
     const pd=Math.abs(x-FPATH(z)), inField=1-smooth(55,75,r);
     c.lerp(PATHG,(1-smooth(FPW-.2,FPW+.3,pd))*inField);
     c.lerp(RUT,(1-smooth(.08,.28,Math.abs(pd-.55)))*inField*.7);
-    const woods=clamp(smooth(58,95,r)+smooth(.5,.7,nz(x*.03,6,z*.03)*.5+.5)*smooth(48,60,r)*.6,0,1);
-    c.lerp(WOOD,woods*.9).lerp(WOOD2,woods*.35*n2);
     const k=.94+.1*n2; tc[i*3]=c.r*k; tc[i*3+1]=c.g*k; tc[i*3+2]=c.b*k;
   }
   T.setAttribute('color',new THREE.BufferAttribute(tc,3)); T.computeVertexNormals();
@@ -125,18 +122,25 @@ function buildField(){
   /* 풀: 허리 높이의 풀숲. 길 위에는 짧게 깎인 초록 풀만 */
   const pdist=(x,z)=>Math.abs(x-FPATH(z));
   const tall=[[],[],[]], short=[], TT=['#ffffff','#f6f2e2','#fffbe6','#ecebd2','#f2f6dc'];
-  for(let n=0,tries=0;n<24000&&tries<90000;tries++){
+  for(let n=0,tries=0;n<22000&&tries<90000;tries++){
     const near=R()<.85, x=(R()-.5)*(near?100:128), z=(R()-.5)*(near?100:128);
     if(pdist(x,z)<FPW+.15||Math.hypot(x,z)>64) continue;
     const s=.8+R()*.45; n++;
     tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*(.85+R()*.35),sz:s,c:choice(R,TT)});
+  }
+  /* 바깥쪽 들녘: 큼직한 포기로 지평선 쪽까지 풀을 이어 붙인다 */
+  for(let n=0;n<4000;){
+    const a=R()*TAU, r=62+Math.pow(R(),.8)*36, x=Math.cos(a)*r, z=Math.sin(a)*r;
+    if(pdist(x,z)<FPW+.15) continue;
+    n++; const s=1.3+R()*.4;
+    tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*.8,sz:s,c:choice(R,TT)});
   }
   for(let i=0;i<1500;i++){
     const z=(R()-.5)*120, x=FPATH(z)+(R()-.5)*2*FPW;
     short.push({x,y:fieldH(x,z)-.02,z,sx:1,sy:.6+R()*.4,sz:1,c:choice(R,['#ffffff','#eaf6d8'])});
   }
   const grassMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.2);
-  [tuftGeo(1,18,.75,1.15,.42,.62),tuftGeo(2,16,.85,1.3,.38,.72),tuftGeo(3,20,.6,1.0,.46,.5)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
+  [tuftGeo(1,18,.95,1.3,.42,.62),tuftGeo(2,16,1.05,1.45,.38,.72),tuftGeo(3,20,.85,1.2,.46,.5)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
   g.add(instances(tuftGeo(4,10,.12,.26,.28,.05),grassMat,short));
 
   /* 억새 이삭: 풀숲 위로 드문드문 솟아 끝이 휘어져 있다 */
@@ -167,24 +171,7 @@ function buildField(){
     g.add(instances(hg,swayMat(new THREE.MeshPhongMaterial({color:0xffffff,side:THREE.DoubleSide,shininess:10,emissive:0x111111}),U,.2),heads[i]));
   });
 
-  /* 들판 가장자리의 덤불 띠(흰 꽃이 핀 관목)와 그 뒤 숲 언덕 */
-  const avoid=[], broads=[], pines=[], bushes=[];
-  for(let n=0,tries=0;n<170&&tries<4000;tries++){
-    const a=R()*TAU, r=50+R()*12, x=Math.cos(a)*r, z=Math.sin(a)*r;
-    if(pdist(x,z)<FPW+2) continue;
-    if(nz(Math.cos(a)*3,1,Math.sin(a)*3)>.55) continue;      // 덤불 사이 군데군데 틈
-    n++; const s=1.3+R()*1.4;
-    bushes.push({x,y:fieldH(x,z)-.1,z,sx:s*1.4,sy:s*(.9+R()*.4),sz:s*1.3,ry:R()*6,c:choice(R,['#ffffff','#e9f2d8','#f4f8ea','#dfe9c8'])});
-  }
-  for(let n=0,tries=0;n<420&&tries<8000;tries++){
-    const a=R()*TAU, r=64+Math.pow(R(),.8)*150, x=Math.cos(a)*r, z=Math.sin(a)*r;
-    n++; const s=1+R()*1.4, it={x,y:fieldH(x,z)-.2,z,sx:s,sy:s*(.85+R()*.4),sz:s,ry:R()*6,c:choice(R,TINT)};
-    (R()<.75?broads:pines).push(it);
-  }
-  g.add(instances(broadGeo(),VC(),broads)); g.add(instances(pineGeo(),VC(),pines)); g.add(instances(bushGeo(),VC(),bushes));
-  /* 덤불에 핀 흰 꽃 */
-  const bloom=points(700,0,'#fffdf2',.22,null,()=>{ const b=bushes[Math.floor(R()*bushes.length)], a=R()*TAU; return [b.x+Math.cos(a)*b.sx*.8,b.y+b.sy*(.3+R()*.6),b.z+Math.sin(a)*b.sz*.8]; });
-  bloom.material.blending=THREE.NormalBlending; g.add(bloom);
+  const avoid=[];
 
   /* 맑은 하늘에 아주 작은 구름 몇 점 */
   [[.6,95,240,7],[-.5,120,280,5],[2.4,80,260,6]].forEach(([a,y,r,s])=>{
@@ -206,7 +193,7 @@ function buildField(){
   const seeds=points(80,0,'#ffffff',.1,null,()=>[(R()-.5)*70,.6+R()*2.4,(R()-.5)*70]); seeds.material.blending=THREE.NormalBlending; seeds.material.opacity=.8; g.add(seeds);
   const sp=seeds.geometry.attributes.position;
 
-  return {group:g,fog:{c:0xc9dfea,n:80,f:520},bg:0xbcd8ea,bounds:{rect:[-FXH,FXH,-FXH,FXH]},avoid,
+  return {group:g,fog:{c:0xc9dfea,n:45,f:280},bg:0xbcd8ea,bounds:{rect:[-FXH,FXH,-FXH,FXH]},avoid,
     spawn:{x:FPATH(14),z:14},spawnJ:[30,26],groundH:fieldH,waterY:-1000,pitch:.2,pitchSit:.1,
     update(t,dt,me){
       const s=spd();
