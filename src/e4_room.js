@@ -1,6 +1,6 @@
 /* ---- 함께 앉기: 지금 이 페이지를 열어 둔 사람들이 같은 공간에서 서로 보인다(저장되지 않고, 나가면 사라진다) ---- */
 const Together=(()=>{
-  let room=null, started=false, acc=0, lastSent='', seenN=0, sync=0;
+  let room=null, why='', started=false, acc=0, lastSent='', seenN=0, sync=0;
   const others=new Map();
   const pill=document.getElementById('together');
   const sid=()=>S.mode==='hub'?'hub':(S.mode==='scene'&&S.realm?S.realm.id:'');
@@ -50,7 +50,7 @@ const Together=(()=>{
     const here=[...others.values()].filter(o=>o.s===sid()).length;
     const all=others.size;
     pill.hidden=!(started&&S.mode!=='login');
-    if(!room) pill.textContent='혼자 앉는 중';
+    if(!room) pill.textContent='혼자 앉는 중'+(why?' (연결 실패: '+why+')':'');
     else if(!room.connected()) pill.textContent='연결 중…';
     else pill.textContent=all===0?`지금은 혼자예요 (감지 ${seenN}명)`:(here>0?`함께 ${here}명`:`다른 곳에 ${all}명`);
   }
@@ -63,7 +63,7 @@ const Together=(()=>{
       room.onPeers(ch=>apply(ch.peers),()=>{ room=null; });
       apply(room.peers());
       send(true);
-    }catch(e){ room=null; }
+    }catch(e){ room=null; why=(e&&(e.type||e.message))||'오류'; }
     count();
   }
   function send(force){
