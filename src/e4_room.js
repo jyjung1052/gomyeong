@@ -53,6 +53,7 @@ const Together=(()=>{
     if(!room) pill.textContent='혼자 앉는 중'+(why?' (연결 실패: '+why+')':'');
     else if(!room.connected()) pill.textContent='연결 중…';
     else pill.textContent=all===0?`지금은 혼자예요 (감지 ${seenN}명)`:(here>0?`함께 ${here}명`:`다른 곳에 ${all}명`);
+    if(room&&room.debug) pill.textContent+=' · '+room.debug();
   }
   async function start(){
     if(started) return; started=true;
@@ -74,7 +75,9 @@ const Together=(()=>{
     if(!force&&key===lastSent) return;
     lastSent=key; room.presence(p).catch(()=>{});
   }
+  let down=0;
   function tick(dt,t){
+    if(room&&room.close&&!room.connected()){ if((down+=dt)>12){ down=0; try{room.close();}catch(e){} room=null; [...others.keys()].forEach(drop); started=false; start(); return; } } else down=0;
     if(!room){ if(started&&(acc+=dt)>1){ acc=0; count(); } return; }
     acc+=dt; if(acc>=.2){ acc=0; send(false); }
     sync+=dt; if(sync>=1){ sync=0; apply(room.peers()); }

@@ -82,13 +82,14 @@ const PeerRoom=(()=>{
     const t1=setInterval(scan,4000), t2=setInterval(()=>{ conns.forEach(send); emit(); },2000);
     scan();
     const close=()=>{ closed=true; clearInterval(t1); clearInterval(t2); try{p.destroy();}catch(e){} };
-    try{ window.addEventListener('pagehide',close); }catch(e){}
+    try{ window.addEventListener('pagehide',e=>{ if(!e.persisted) close(); }); }catch(e){}
     return {
       connected:()=>!closed&&p.open&&!p.disconnected,
       peers:list,
       onPeers(cb,onClose){ cbs.push(cb); },
       presence(d){ mine=d; conns.forEach(send); return Promise.resolve(); },
-      close
+      close,
+      debug:()=>{ let n=0; conns.forEach(c=>{ if(c.open) n++; }); return '자리'+idx+' 연결'+n+' 감지'+list().length+(p.open?'':' 서버끊김'); }
     };
   }
   return {open};
