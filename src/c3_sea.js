@@ -1,6 +1,8 @@
 /* ---- 바다: 먼 섬과 등대, 발자국이 남는 모래, 밀려와 발자국을 씻어 가는 파도, 조개껍질 ---- */
 const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-function sandH(x,z){ return (z<-1?-Math.min(.9,(-1-z)*.14):0)+.05*Math.sin(x*.2)*Math.sin(z*.15); }
+/* 바닷속 바닥: 무릎 깊이(-.9)까지는 완만하게, 그 너머는 더 가파르게 깊어져 헤엄칠 수 있다 */
+const SEA_WATER=-.15;
+function sandH(x,z){ const d=-1-z; return (z<-1?-(d<6.43?d*.14:.9+(d-6.43)*.2):0)+.05*Math.sin(x*.2)*Math.sin(z*.15); }
 
 /* 해변 뒤쪽: 모래가 풀 덮인 둔덕으로 올라가고, 양 끝은 숲 우거진 곶이 된다 */
 function seaBackH(x,z){
@@ -32,16 +34,16 @@ function buildSea(){
   const disc=mesh(new THREE.CircleGeometry(13,32),B('#fff3da',{fog:false}),sd.x*430,sd.y*430,sd.z*430); disc.lookAt(0,0,0); g.add(disc);
 
   /* 모래: 알갱이 무늬 */
-  const sg=new THREE.PlaneGeometry(900,140,300,70); sg.rotateX(-Math.PI/2);
+  const sg=new THREE.PlaneGeometry(900,200,300,100); sg.rotateX(-Math.PI/2);
   const sp0=sg.attributes.position, sc0=new Float32Array(sp0.count*3), cw=new THREE.Color(), DUNE=new THREE.Color('#b9b878'), JUN=new THREE.Color('#4f8b45'), DEEP=new THREE.Color('#3c6b3b');
   for(let i=0;i<sp0.count;i++){
-    const x=sp0.getX(i), z=sp0.getZ(i)+60, nn=.6+.4*nz(x*.1,0,z*.1);
+    const x=sp0.getX(i), z=sp0.getZ(i)+40, nn=.6+.4*nz(x*.1,0,z*.1);
     sp0.setY(i,seaBackH(x,z));
     cw.setRGB(1,1,1).lerp(DUNE,smooth(27,37,z)*nn).lerp(JUN,smooth(37,52,z)).lerp(DEEP,smooth(70,115,z)).lerp(JUN,smooth(72,100,Math.abs(x))*.8);
     sc0[i*3]=cw.r; sc0[i*3+1]=cw.g; sc0[i*3+2]=cw.b;
   }
   sg.setAttribute('color',new THREE.BufferAttribute(sc0,3)); sg.computeVertexNormals();
-  const sand=new THREE.Mesh(sg); sand.position.z=60;
+  const sand=new THREE.Mesh(sg); sand.position.z=40;
   const st=canvasTex(256,256,(c,w,h)=>{
     c.fillStyle='#f3e8cc'; c.fillRect(0,0,w,h);
     const Rr=rng(3);
@@ -77,6 +79,7 @@ function buildSea(){
   const fitDecal=()=>{ for(let i=0;i<dp.count;i++) dp.setY(i,sandH(X0+PSX/2+dp.getX(i),Z0+PSZ/2+dp.getZ(i))+.014); dp.needsUpdate=true; decal.position.x=X0+PSX/2; };
   fitDecal();
   let dirty=false, lastUp=0;
+  let splT=0;
   function stamp(x,z,h,side){
     const cxp=(x-Math.cos(h)*.11*side-X0)*U, cyp=(z+Math.sin(h)*.11*side-Z0)*U;
     if(cxp<0||cxp>PW||cyp<0||cyp>PH) return;
@@ -182,8 +185,9 @@ function buildSea(){
   const clouds=[]; for(let i=0;i<9;i++){ const c=cloudCluster(0,35+R()*28,-250+R()*120,6+R()*8,.85); c.userData={x0:(R()-.5)*700,v:2+R()*3}; g.add(c); clouds.push(c); }
 
   let lx=0, lz=4, dist=0, side=1;
-  return {group:g,fog:{c:0xf1e0cf,n:60,f:420},bg:0xf1e0cf,bounds:{rect:[-75,75,-1.2,26]},avoid:avoidL,spawn:{x:0,z:6},spawnJ:[60,6],
+  return {group:g,fog:{c:0xf1e0cf,n:60,f:420},bg:0xf1e0cf,bounds:{rect:[-75,75,-30,26]},avoid:avoidL,spawn:{x:0,z:6},spawnJ:[60,6],groundH:seaBackH,waterY:SEA_WATER,
     update(t,dt,me){
+      if(me&&me.walking){ const dep=SEA_WATER-seaBackH(me.x,me.z); if(dep>.05){ splT-=dt; if(splT<0){ splT=dep>.75?.55:.4; Sound.event('splash',Math.min(1,dep)); } } }
       const s=spd();
       /* 잔잔한 물결 */
       for(let i=0;i<wp.count;i++){
