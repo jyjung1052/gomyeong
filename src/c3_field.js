@@ -17,7 +17,7 @@ function tuftGeo(seed,n,hMin,hMax,spread,dry){
   const GB=new THREE.Color('#3a6428'), GT=new THREE.Color('#9fc25c'), DB=new THREE.Color('#8b8a4c'), DT=new THREE.Color('#e3d397'), c=new THREE.Color();
   for(let b=0;b<n;b++){
     const isDry=R()<dry, a=R()*TAU, d=Math.sqrt(R())*spread, ox=Math.cos(a)*d, oz=Math.sin(a)*d;
-    const h=(isDry?1:.7)*(hMin+R()*(hMax-hMin)), w=isDry?.009+R()*.006:.016+R()*.012;
+    const h=(isDry?1:.7)*(hMin+R()*(hMax-hMin)), w=isDry?.012+R()*.008:.018+R()*.014;
     const fa=R()*TAU, lean=.03+R()*(isDry?.08:.2), lx=Math.cos(a)*lean*h, lz=Math.sin(a)*lean*h;
     const px=Math.cos(fa)*w, pz=Math.sin(fa)*w, B0=isDry?DB:GB, T0=isDry?DT:GT, k=.85+R()*.25;
     [[ox-px,0,oz-pz,0],[ox+px,0,oz+pz,0],[ox+lx,h,oz+lz,1]].forEach(([x,y,z,t])=>{
@@ -125,8 +125,8 @@ function buildField(){
   /* 풀: 허리 높이의 풀숲. 길 위에는 짧게 깎인 초록 풀만 */
   const pdist=(x,z)=>Math.abs(x-FPATH(z));
   const tall=[[],[],[]], short=[], TT=['#ffffff','#f6f2e2','#fffbe6','#ecebd2','#f2f6dc'];
-  for(let n=0,tries=0;n<11500&&tries<50000;tries++){
-    const near=R()<.75, x=(R()-.5)*(near?96:124), z=(R()-.5)*(near?96:124);
+  for(let n=0,tries=0;n<24000&&tries<90000;tries++){
+    const near=R()<.85, x=(R()-.5)*(near?100:128), z=(R()-.5)*(near?100:128);
     if(pdist(x,z)<FPW+.15||Math.hypot(x,z)>64) continue;
     const s=.8+R()*.45; n++;
     tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*(.85+R()*.35),sz:s,c:choice(R,TT)});
@@ -136,7 +136,7 @@ function buildField(){
     short.push({x,y:fieldH(x,z)-.02,z,sx:1,sy:.6+R()*.4,sz:1,c:choice(R,['#ffffff','#eaf6d8'])});
   }
   const grassMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.2);
-  [tuftGeo(1,14,.75,1.15,.32,.62),tuftGeo(2,12,.85,1.3,.28,.72),tuftGeo(3,16,.6,1.0,.36,.5)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
+  [tuftGeo(1,18,.75,1.15,.42,.62),tuftGeo(2,16,.85,1.3,.38,.72),tuftGeo(3,20,.6,1.0,.46,.5)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
   g.add(instances(tuftGeo(4,10,.12,.26,.28,.05),grassMat,short));
 
   /* 억새 이삭: 풀숲 위로 드문드문 솟아 끝이 휘어져 있다 */
