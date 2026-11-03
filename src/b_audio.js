@@ -84,6 +84,16 @@ const Sound=(()=>{
       if(onReady) onReady();
     }).catch(()=>{});
   }
+  /* 녹음 조각을 한 번만 재생(새 한 마리 울음 등) */
+  function sampleOnce(sc,url,g,pan){
+    if(typeof fetch!=='function') return;
+    loadBuf(url).then(buf=>{
+      if(sc.dead) return;
+      const s=ctx.createBufferSource(); s.buffer=buf; const out=ctx.createGain(); out.gain.value=g;
+      s.connect(out); let o=out; if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=pan||0; out.connect(p); o=p; }
+      o.connect(sc.bus); s.start();
+    }).catch(()=>{});
+  }
   function tone(sc,f0,f1,dur,peak,type,wetAmt,pan){
     if(!ctx||sc.dead) return;
     const t=ctx.currentTime;
@@ -231,9 +241,15 @@ const Sound=(()=>{
       });
     },
     mountain(sc){
-      /* 새벽 산의 소리: 사용자가 찍은 영상 소리 그대로(가공 없음) */
-      sampleLoop(sc,'snd/mountain3.m4a',1.0);
-      sc.timers.push(setTimeout(()=>bell(sc),3000));
+      /* 새벽 산의 고요함: 사용자 영상 소리에서 새소리와 '고로록'(바람이 마이크 치는 저음)만 뺀 바탕 */
+      sampleLoop(sc,'snd/mtbed.m4a',1.0);
+      /* 진짜 새소리는 처음엔 조용하다가 1~2분에 한 번, 짧게 */
+      const birds=['snd/bird1.m4a','snd/bird2.m4a','snd/bird3.m4a','snd/bird4.m4a'];
+      if(typeof fetch==='function') birds.forEach(u=>loadBuf(u).catch(()=>{}));
+      const sing=()=>sampleOnce(sc,birds[Math.floor(Math.random()*birds.length)],1.0,rnd(-.6,.6));
+      const next=d=>sc.timers.push(setTimeout(()=>{ if(sc.dead) return; sing(); next(rnd(60,120)); },d*1000));
+      next(rnd(45,75));
+      sc.timers.push(setTimeout(()=>bell(sc),25000));
       mk.every(sc,16,30,()=>bell(sc));
     },
     /* 소나기: 숲 위로 '쏴아아' 하고 쉬지 않고 쏟아지는 굵은 비. 가끔 더 세게 몰아친다 */
