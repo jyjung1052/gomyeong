@@ -241,12 +241,15 @@ const Sound=(()=>{
       });
     },
     mountain(sc){
-      /* 산: 아주 작고 잔잔한 바람 + 1분 뒤 사용자 영상 소리 한 번. 그 밖의 소리는 없음 */
+      /* 산: 아주 작고 잔잔한 바람 + 1분 뒤 사용자 영상 소리 한 번 + 가끔 먼 종소리 */
       const bp=mk.filt('bandpass',480,1.0);
       const w=mk.bed(sc,noiseB,[bp],.03);
       mk.lfo(sc,.045,.012,w.gain); mk.lfo(sc,.037,180,bp.frequency);
       if(typeof fetch==='function') loadBuf('snd/mtclip.m4a').catch(()=>{});
       sc.timers.push(setTimeout(()=>{ if(!sc.dead) sampleOnce(sc,'snd/mtclip.m4a',1.0,0); },60000));
+      /* 가끔 울리는 먼 종소리 */
+      sc.timers.push(setTimeout(()=>bell(sc),25000));
+      mk.every(sc,16,30,()=>bell(sc));
     },
     /* 소나기: 숲 위로 '쏴아아' 하고 쉬지 않고 쏟아지는 굵은 비. 가끔 더 세게 몰아친다 */
     rain(sc){
