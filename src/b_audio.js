@@ -301,25 +301,25 @@ const Sound=(()=>{
     },
     field(sc){
       /* 들녘: 바람이 밀려올 때마다 풀숲이 '사그락' 스치고, 잦아들면 조용해진다 */
-      const gust=mk.gain(.35); gust.connect(sc.bus);                       // 바람 세기(0~1)
+      const gust=mk.gain(.3); gust.connect(sc.bus);                       // 바람 세기(0~1)
       const real=sc.bus; sc.bus=gust;
       const bp=mk.filt('bandpass',650,.6);
-      const w=mk.bed(sc,noiseB,[bp],.42); mk.lfo(sc,.05,220,bp.frequency);  // 낮은 바람
-      const air=mk.bed(sc,noiseW,[mk.filt('bandpass',1500,.5),mk.filt('lowpass',4000)],.16);
-      const rus=mk.bed(sc,noiseW,[mk.filt('highpass',3200),mk.filt('lowpass',9000)],.08);  // 풀잎 스치는 결
-      mk.lfo(sc,.9,.03,rus.gain);
+      const w=mk.bed(sc,noiseB,[bp],.2); mk.lfo(sc,.05,220,bp.frequency);  // 낮은 바람
+      const air=mk.bed(sc,noiseW,[mk.filt('bandpass',1500,.5),mk.filt('lowpass',3200)],.06);
+      const rus=mk.bed(sc,noiseW,[mk.filt('highpass',3200),mk.filt('lowpass',8000)],.022);  // 풀잎 스치는 결
+      mk.lfo(sc,.9,.008,rus.gain);
       sc.bus=real;
       let gustOn=false;
       const blow=()=>{
         if(sc.dead) return;
-        const t0=ctx.currentTime, peak=rnd(.75,1), up=rnd(1.2,2.2), hold=rnd(2,5);
+        const t0=ctx.currentTime, peak=rnd(.5,.7), up=rnd(2,3.5), hold=rnd(2,5);
         gust.gain.setTargetAtTime(peak,t0,up/3); gustOn=true;
-        sc.timers.push(setTimeout(()=>{ if(sc.dead) return; gust.gain.setTargetAtTime(rnd(.22,.4),ctx.currentTime,rnd(.8,1.6)); gustOn=false; },(up+hold)*1000));
+        sc.timers.push(setTimeout(()=>{ if(sc.dead) return; gust.gain.setTargetAtTime(rnd(.25,.35),ctx.currentTime,rnd(1.5,2.5)); gustOn=false; },(up+hold)*1000));
         sc.timers.push(setTimeout(blow,(up+hold+rnd(4,10))*1000));
       };
       sc.timers.push(setTimeout(blow,2500));
       /* 사그락: 마른 풀잎끼리 부딪는 아주 짧고 바삭한 소리 알갱이. 바람이 셀 때 촘촘해진다 */
-      const grain=()=>hit(sc,2600,7500,.9,rnd(.016,.055)*(gustOn?1.4:.8),rnd(.012,.035));
+      const grain=()=>hit(sc,2600,7500,.9,rnd(.006,.02)*(gustOn?1.3:.8),rnd(.012,.035));
       const tick=()=>{
         if(sc.dead) return;
         const n=gustOn?Math.floor(rnd(1,4)):(Math.random()<.35?1:0);
