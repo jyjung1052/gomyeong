@@ -13,7 +13,7 @@ function fieldEdge(x,z){ const a=Math.atan2(z,x); return 72+7*Math.sin(a*3+1)+4*
 /* 풀 한 포기: 가늘고 곧은 줄기 여러 장. 누렇게 마른 줄기와 초록 줄기가 섞인다 */
 function tuftGeo(seed,n,hMin,hMax,spread,dry){
   const R=rng(seed), pos=[], col=[], nor=[];
-  const GB=new THREE.Color('#244d17'), GT=new THREE.Color('#8fcf45'), DB=new THREE.Color('#6f843a'), DT=new THREE.Color('#d6c47c'), c=new THREE.Color();
+  const GB=new THREE.Color('#3f5a1e'), GT=new THREE.Color('#b9c94c'), DB=new THREE.Color('#8a863c'), DT=new THREE.Color('#e6d27c'), c=new THREE.Color();
   for(let b=0;b<n;b++){
     const isDry=R()<dry, a=R()*TAU, d=Math.sqrt(R())*spread, ox=Math.cos(a)*d, oz=Math.sin(a)*d;
     const h=(isDry?1:.8)*(hMin+R()*(hMax-hMin)), w=isDry?.012+R()*.008:.018+R()*.014;
@@ -105,7 +105,7 @@ function buildField(){
   /* 지형: 풀숲 아래는 짙은 초록(빈틈도 그늘진 풀처럼), 그 너머는 젖은 갯벌 */
   const T=new THREE.PlaneGeometry(1400,1400,260,260); T.rotateX(-Math.PI/2);
   const tp=T.attributes.position, tc=new Float32Array(tp.count*3), c=new THREE.Color();
-  const UND=new THREE.Color('#2a4a1b'), UND2=new THREE.Color('#3d6424'), MUD=new THREE.Color('#5b5950'), MUD2=new THREE.Color('#45453f'), WET=new THREE.Color('#7f8288');
+  const UND=new THREE.Color('#4a4a20'), UND2=new THREE.Color('#5f5c2a'), MUD=new THREE.Color('#5b5950'), MUD2=new THREE.Color('#45453f'), WET=new THREE.Color('#7f8288');
   for(let i=0;i<tp.count;i++){
     const x=tp.getX(i), z=tp.getZ(i), y=fieldH(x,z), r=Math.hypot(x,z);
     tp.setY(i,y);
@@ -129,7 +129,7 @@ function buildField(){
   });
 
   /* 풀숲: 빈틈 없이 빼곡하게. 앉으면 몸이 묻힌다 */
-  const tall=[[],[],[]], TT=['#ffffff','#f2f8e6','#fbffe9','#e6f0d4','#fff8dc'];
+  const tall=[[],[],[]], TT=['#ffffff','#fff6dc','#fff0c8','#f6eccc','#fff9e2'];
   for(let n=0,tries=0;n<24000&&tries<90000;tries++){
     const x=(R()-.5)*104, z=(R()-.5)*104;
     if(Math.hypot(x,z)>60) continue;
@@ -144,7 +144,7 @@ function buildField(){
     tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*.85,sz:s,c:choice(R,TT)});
   }
   const grassMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.2);
-  [tuftGeo(1,18,1.0,1.35,.44,.22),tuftGeo(2,16,1.1,1.5,.4,.3),tuftGeo(3,20,.9,1.25,.48,.15)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
+  [tuftGeo(1,18,1.0,1.35,.44,.62),tuftGeo(2,16,1.1,1.5,.4,.72),tuftGeo(3,20,.9,1.25,.48,.5)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
 
   /* 풀숲 위로 드문드문 고개 숙인 이삭 */
   const plumes=[[],[],[]];
