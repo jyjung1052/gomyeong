@@ -242,9 +242,9 @@ const Sound=(()=>{
     },
     mountain(sc){
       /* 새벽 산의 고요함: 사용자 영상 소리에서 새소리와 '고로록'(바람이 마이크 치는 저음)만 뺀 바탕 */
-      sampleLoop(sc,'snd/mtbed.m4a',1.0);
+      sampleLoop(sc,'snd/mtbed2.m4a',1.0);
       /* 진짜 새소리는 처음엔 조용하다가 1~2분에 한 번, 짧게 */
-      const birds=['snd/bird1.m4a','snd/bird2.m4a','snd/bird3.m4a','snd/bird4.m4a'];
+      const birds=['snd/birdA.m4a','snd/birdB.m4a','snd/birdC.m4a'];
       if(typeof fetch==='function') birds.forEach(u=>loadBuf(u).catch(()=>{}));
       const sing=()=>sampleOnce(sc,birds[Math.floor(Math.random()*birds.length)],1.0,rnd(-.6,.6));
       const next=d=>sc.timers.push(setTimeout(()=>{ if(sc.dead) return; sing(); next(rnd(60,120)); },d*1000));
