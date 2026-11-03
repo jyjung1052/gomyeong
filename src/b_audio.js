@@ -83,6 +83,30 @@ const Sound=(()=>{
     o.start(t); o.stop(t+dur+.1);
   }
 
+  /* 갈매기 울음: "끼-룩 끼-룩". 톱니파가 올랐다 내려오고, 목청 같은 필터를 지난다 */
+  function gullCry(sc,near){
+    if(!ctx||sc.dead) return;
+    const pan=rnd(-.8,.8), n=2+Math.floor(Math.random()*3), base=rnd(1350,1750), lvl=(near?.085:.045)*rnd(.8,1.1);
+    let at=0;
+    for(let k=0;k<n;k++){
+      const t=ctx.currentTime+at, f0=base*rnd(.95,1.06), len=rnd(.2,.3);
+      const o=ctx.createOscillator(); o.type='sawtooth';
+      o.frequency.setValueAtTime(f0*.82,t);
+      o.frequency.exponentialRampToValueAtTime(f0*1.32,t+len*.28);      /* 끼 */
+      o.frequency.exponentialRampToValueAtTime(f0*.7,t+len);            /* 룩 */
+      const vib=ctx.createOscillator(); vib.frequency.value=rnd(30,46); const vg=ctx.createGain(); vg.gain.value=26; vib.connect(vg); vg.connect(o.frequency);
+      const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=rnd(2100,2700); bp.Q.value=1.4;
+      const g=ctx.createGain();
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(lvl,t+.035); g.gain.setTargetAtTime(lvl*.45,t+len*.3,.05); g.gain.exponentialRampToValueAtTime(.0001,t+len);
+      o.connect(bp); bp.connect(g);
+      let out=g; if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=pan; g.connect(p); out=p; }
+      out.connect(sc.bus);
+      const w=ctx.createGain(); w.gain.value=near?.35:.7; out.connect(w); w.connect(sc.wet);
+      o.start(t); vib.start(t); o.stop(t+len+.05); vib.stop(t+len+.05);
+      at+=len+rnd(.1,.2)+(k===0?.06:0);
+    }
+  }
+
   function bird(sc){
     const f=rnd(2300,4200), n=Math.floor(rnd(2,5)), pan=rnd(-.8,.8);
     for(let i=0;i<n;i++){
@@ -121,10 +145,10 @@ const Sound=(()=>{
       mk.lfo(sc,.057,.2,b.gain);
       const c=mk.bed(sc,noiseW,[mk.filt('highpass',2200),mk.filt('lowpass',7500)],.05);
       mk.lfo(sc,.085,.04,c.gain);
-      mk.every(sc,14,28,()=>{
-        const pan=rnd(-.6,.6);
-        tone(sc,1900,1300,.35,.03,'triangle',.4,pan);
-        setTimeout(()=>tone(sc,1700,1100,.3,.025,'triangle',.4,pan),260);
+      /* 갈매기: 멀리서 가끔, 이따금 가까이서 서로 부른다 */
+      mk.every(sc,5,13,()=>{
+        gullCry(sc,Math.random()<.3);
+        if(Math.random()<.45) sc.timers.push(setTimeout(()=>gullCry(sc,false),rnd(900,1800)));
       });
     },
     forest(sc){
@@ -237,7 +261,7 @@ const Sound=(()=>{
     if(kind==='eave'&&cur.name==='rain'){
       tone(cur,rnd(900,1500),rnd(450,650),.13,.09,'sine',.6,rnd(-.7,.7));
     }
-    if(kind==='splash'&&cur.name==='valley'){
+    if(kind==='splash'&&(cur.name==='valley'||cur.name==='sea')){
       const t=ctx.currentTime, s=ctx.createBufferSource(); s.buffer=noiseW;
       const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=rnd(1400,2600); f.Q.value=.7;
       const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(rnd(.05,.1)*(amt||1),t+.03); g.gain.exponentialRampToValueAtTime(.0001,t+rnd(.25,.45));

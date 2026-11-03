@@ -101,7 +101,7 @@ function buildSea(){
   function setBand(m,rows,far,near,off){
     const p=m.geometry.attributes.position;
     for(let r=0;r<=rows;r++) for(let i=0;i<=NC;i++){
-      const x=bcx-SW/2+i, z=lerp(far[i],near[i],r/rows); p.setXYZ(r*(NC+1)+i,x,sandH(x,z)+off,z);
+      const x=clamp(bcx-SW/2+i,-72,72), z=lerp(far[i],near[i],r/rows); p.setXYZ(r*(NC+1)+i,x,sandH(x,z)+off,z);
     }
     p.needsUpdate=true;
   }
@@ -212,7 +212,7 @@ function buildSea(){
       /* 밀려오는 파도 */
       bcx=me?Math.round(me.x):0;
       if(me&&Math.abs(me.x-(X0+PSX/2))>16){ X0=Math.round(me.x-PSX/2); pc.clearRect(0,0,PW,PH); fitDecal(); dirty=true; }
-      const cyc=Math.floor(t/P), u=(t-cyc*P)/P, zMax=lerp(-.2,5.6,rng(cyc*977+13)());
+      const cyc=Math.floor(t/P), u=(t-cyc*P)/P, zMax=lerp(-1.2,1.6,rng(cyc*977+13)());
       let sw=0; if(u<.3) sw=easeIO(u/.3); else if(u<.38) sw=1; else if(u<.9) sw=1-easeIO((u-.38)/.52);
       sw*=s>.5?1:.7;
       let any=false, anyWet=false;
