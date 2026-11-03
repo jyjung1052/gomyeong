@@ -354,13 +354,22 @@ function buildMountain(){
   /* 사방으로 펼쳐진 실제 산줄기: 구름바다 위로 봉우리와 능선이 솟아 있다 */
   {
     const NR=150, NA=360, RMIN=30, RMAX=1250, pos=new Float32Array((NR+1)*(NA+1)*3), col=new Float32Array((NR+1)*(NA+1)*3), idx=[];
+    /* 뾰족한 암봉(울산바위·설악 같은 돌산)을 곳곳에 세운다 */
+    const SPK=[]; { const R2=rng(77); for(let i=0;i<46;i++){ const a=R2()*TAU, r=140+Math.pow(R2(),.8)*760; SPK.push({x:Math.sin(a)*r,z:Math.cos(a)*r,h:30+R2()*62+r*.03,w:26+R2()*60,p:.45+R2()*.5,rock:R2()<.7}); } }
+    const rdg=(x,z,f,o)=>1-Math.abs(nz(x*f+o,o*.7,z*f-o));
     const hE=(x,z)=>{
       const r=Math.hypot(x,z), env=smooth(34,125,r);
-      const big=nz(x*.0034+11,0,z*.0034)*.5+.5, mid=1-Math.abs(nz(x*.0095,5,z*.0095)), fine=nz(x*.032,9,z*.032)*.5+.5;
-      const M=Math.pow(clamp(big*.58+mid*.42,0,1),1.3)*.86+fine*.1;
-      return -114+104*M*env+2.5*fine*env;
+      const wx=x+nz(x*.004,1,z*.004)*160, wz=z+nz(x*.004,8,z*.004+3)*160;
+      const big=nz(wx*.0036+11,0,wz*.0036)*.5+.5;
+      let rd=Math.pow(rdg(wx,wz,.0075,3),2.2)*.55+Math.pow(rdg(wx,wz,.019,6),2.6)*.3+Math.pow(rdg(wx,wz,.05,9),2.2)*.15;
+      const cliff=smooth(.55,.8,nz(wx*.0021,4,wz*.0021)*.5+.5);
+      rd=rd*(1-cliff*.25)+cliff*Math.min(1,rd*1.6)*.35;
+      let M=clamp(big*.45+rd*.75,0,1.1); M=Math.pow(M,1.45)*.95;
+      let y=-114+104*M*env;
+      for(let i=0;i<SPK.length;i++){ const q=SPK[i], d=Math.hypot(x-q.x,z-q.z); if(d<q.w*2.2){ const t=Math.max(0,1-d/q.w); y=Math.max(y,-112+q.h*Math.pow(t,q.p)*(q.rock?1:.8)+nz(x*.2,i,z*.2)*(q.rock?1.8:.8)*t); } }
+      return Math.min(y,-6)+1.6*nz(x*.09,9,z*.09)*env;
     };
-    const c1=new THREE.Color(), FOR=new THREE.Color('#44603f'), FOR2=new THREE.Color('#5d6a43'), DRY=new THREE.Color('#7a704c'), ROCK=new THREE.Color('#8b8a86'), LOW=new THREE.Color('#2f4a3d'), WARM=new THREE.Color('#9c8a78');
+    const c1=new THREE.Color(), FOR=new THREE.Color('#44603f'), FOR2=new THREE.Color('#5d6a43'), DRY=new THREE.Color('#7a704c'), ROCK=new THREE.Color('#8b8a86'), LOW=new THREE.Color('#2f4a3d'), MISTC=new THREE.Color('#d6cfd0'), WARM=new THREE.Color('#9c8a78');
     const H=new Float32Array((NR+1)*(NA+1));
     for(let i=0;i<=NR;i++){
       const r=RMIN+Math.pow(i/NR,1.7)*(RMAX-RMIN);
@@ -375,8 +384,9 @@ function buildMountain(){
     for(let k=0;k<H.length;k++){
       const x=pos[k*3], y=pos[k*3+1], z=pos[k*3+2], ny=nrm.getY(k), t=smooth(-100,-30,y), tex=nz(x*.11,2,z*.11)*.5+.5, tex2=nz(x*.45,4,z*.45)*.5+.5;
       c1.copy(LOW).lerp(FOR,smooth(-112,-86,y)).lerp(FOR2,smooth(.3,.7,tex)*.6).lerp(DRY,smooth(.55,.95,nz(x*.02,7,z*.02)*.5+.5)*.35);
-      c1.lerp(ROCK,Math.max(smooth(.9,.62,ny),smooth(-48,-22,y)*.8));
+      c1.lerp(ROCK,Math.max(smooth(.86,.55,ny),smooth(-58,-30,y)*.85));
       const sh=.78+.34*tex2*.6+.14*tex; c1.multiplyScalar(sh);
+      { const mp=smooth(.58,.9,nz(x*.0042+5,3,z*.0042)*.5+.5)*smooth(-108,-80,y)*smooth(-30,-70,y)*.8; c1.lerp(MISTC,mp); }
       c1.lerp(WARM,.06);
       col[k*3]=c1.r; col[k*3+1]=c1.g; col[k*3+2]=c1.b;
     }
