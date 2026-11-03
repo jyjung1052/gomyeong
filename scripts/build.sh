@@ -7,5 +7,6 @@ mkdir -p dist
 sed -i "s#__RELAY_URL__#${RELAY_URL:-wss://gomyeong-relay.gomyeong.workers.dev/ws}#" dist/app.js
 node --check dist/app.js
 { cat src/a_head.html; echo "<script>"; cat dist/app.js; echo "</script>"; } > dist/index.html
+rm -rf dist/snd; cp -r assets/snd dist/snd
 touch dist/.nojekyll
 echo "built dist/index.html ($(wc -c < dist/index.html) bytes)"

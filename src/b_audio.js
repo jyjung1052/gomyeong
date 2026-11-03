@@ -64,6 +64,25 @@ const Sound=(()=>{
     }
   };
 
+  /* 녹음한 소리 파일: 한 번 받아 두고, 장면에 들어갈 때마다 이음매 없이 반복한다 */
+  const bufCache={};
+  function loadBuf(url){
+    if(!bufCache[url]) bufCache[url]=fetch(url).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(ab=>new Promise((ok,no)=>ctx.decodeAudioData(ab,ok,no)));
+    bufCache[url].catch(()=>{ delete bufCache[url]; });
+    return bufCache[url];
+  }
+  function sampleLoop(sc,url,g,onReady){
+    if(typeof fetch!=='function') return;
+    loadBuf(url).then(buf=>{
+      if(sc.dead) return;
+      const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true;
+      s.loopStart=.06; s.loopEnd=buf.duration-.06;           /* AAC 앞뒤 무음 패딩을 건너뛴다 */
+      const out=ctx.createGain(), t=ctx.currentTime; out.gain.setValueAtTime(0,t); out.gain.linearRampToValueAtTime(g,t+2.5);
+      s.connect(out); out.connect(sc.bus); s.start(0,.06+Math.random()*(buf.duration-1)); sc.srcs.push(s);
+      if(onReady) onReady();
+    }).catch(()=>{});
+  }
   function tone(sc,f0,f1,dur,peak,type,wetAmt,pan){
     if(!ctx||sc.dead) return;
     const t=ctx.currentTime;
@@ -246,6 +265,8 @@ const Sound=(()=>{
       mk.every(sc,35,80,()=>thunder(sc));
     },
     valley(sc){
+      /* 실제 계곡 녹음(사용자 제공). 받기 전·실패 시에는 합성한 물소리가 대신 흐른다 */
+      const realBus=sc.bus, syn=ctx.createGain(); syn.gain.value=1; syn.connect(realBus); sc.bus=syn;
       const rush=mk.bed(sc,noiseW,[mk.filt('bandpass',1300,.45)],.08);
       mk.lfo(sc,.13,.02,rush.gain);
       const hiss=mk.bed(sc,noiseW,[mk.filt('highpass',4200)],.028);
@@ -255,7 +276,8 @@ const Sound=(()=>{
         const b=mk.filt('bandpass',f,q), o=mk.bed(sc,noiseW,[b],gn);
         mk.lfo(sc,lf,dep,b.frequency); mk.lfo(sc,lf*.7,gn*.6,o.gain);
       });
-      mk.every(sc,.25,1.0,()=>{ const f=rnd(300,800); tone(sc,f,f*rnd(1.6,2.4),.09,rnd(.008,.022),'sine',.25,rnd(-.8,.8)); });
+      sc.bus=realBus;
+      sampleLoop(sc,'snd/valley.m4a',.9,()=>syn.gain.setTargetAtTime(0,ctx.currentTime,.8));
       mk.every(sc,5,12,()=>bird(sc));
     },
     cave(sc){
