@@ -3,17 +3,17 @@ const FXH=44;                                              // 걸을 수 있는 
 const FPATH=z=>6*Math.sin(z*.035+.6)+2*Math.sin(z*.09);    // 들판을 가로지르는 풀 깎인 길
 const FPW=1.25;                                            // 길의 반너비
 function fieldH(x,z){
-  const r=Math.hypot(x,z);
-  let y=.55*nz(x*.025,0,z*.025)+.2*nz(x*.07,3,z*.07);
-  /* 들판 가장자리 너머: 낮고 둥근 숲 언덕(한쪽이 더 높다) */
-  /* 산·언덕 없이 지평선까지 이어지는 평평한 들녘(아주 완만한 기복만) */
-  y+=smooth(60,200,r)*1.5*nz(x*.008,2,z*.008);
-  return y;
+  const r=Math.hypot(x,z), a=Math.atan2(z,x), edge=72+7*Math.sin(a*3+1)+4*Math.sin(a*7);   // 풀숲이 끝나는 곳(들쭉날쭉)
+  let y=.35*nz(x*.025,0,z*.025)+.12*nz(x*.07,3,z*.07);
+  /* 풀숲 너머: 물 빠진 갯벌이 지평선까지 평평하게 */
+  const m=smooth(edge,edge+10,r);
+  return y*(1-m)+m*(-.45+.04*nz(x*.05,5,z*.05));
 }
+function fieldEdge(x,z){ const a=Math.atan2(z,x); return 72+7*Math.sin(a*3+1)+4*Math.sin(a*7); }
 /* 풀 한 포기: 가늘고 곧은 줄기 여러 장. 누렇게 마른 줄기와 초록 줄기가 섞인다 */
 function tuftGeo(seed,n,hMin,hMax,spread,dry){
   const R=rng(seed), pos=[], col=[], nor=[];
-  const GB=new THREE.Color('#3a6428'), GT=new THREE.Color('#9fc25c'), DB=new THREE.Color('#8b8a4c'), DT=new THREE.Color('#e3d397'), c=new THREE.Color();
+  const GB=new THREE.Color('#244d17'), GT=new THREE.Color('#8fcf45'), DB=new THREE.Color('#6f843a'), DT=new THREE.Color('#d6c47c'), c=new THREE.Color();
   for(let b=0;b<n;b++){
     const isDry=R()<dry, a=R()*TAU, d=Math.sqrt(R())*spread, ox=Math.cos(a)*d, oz=Math.sin(a)*d;
     const h=(isDry?1:.8)*(hMin+R()*(hMax-hMin)), w=isDry?.012+R()*.008:.018+R()*.014;
@@ -98,85 +98,66 @@ function swayMat(mat,U,amp){
 function buildField(){
   const g=new THREE.Group(), R=rng(31);
   const U={value:0};
-  g.add(skyDome('#3c82cf','#79b2e3','#cfe4ee'));
-  g.add(new THREE.HemisphereLight(0xeaf4ff,0x6b7a3f,.95));
-  const sun=new THREE.DirectionalLight(0xfff4dc,.95); sun.position.set(40,80,30); g.add(sun);
+  g.add(skyDome('#86ade3','#c3d3ec','#f4efe0'));                 // 위는 파랗고 지평선은 연한 크림빛
+  g.add(new THREE.HemisphereLight(0xf2f4ff,0x48602c,.9));
+  const sun=new THREE.DirectionalLight(0xfff0d2,1.0); sun.position.set(60,45,-40); g.add(sun);
 
-  /* 지형: 들판은 누런 풀빛, 길은 초록, 멀리는 숲이 덮인 언덕 */
-  const T=new THREE.PlaneGeometry(760,760,240,240); T.rotateX(-Math.PI/2);
+  /* 지형: 풀숲 아래는 짙은 초록(빈틈도 그늘진 풀처럼), 그 너머는 젖은 갯벌 */
+  const T=new THREE.PlaneGeometry(1400,1400,260,260); T.rotateX(-Math.PI/2);
   const tp=T.attributes.position, tc=new Float32Array(tp.count*3), c=new THREE.Color();
-  const STRAW=new THREE.Color('#a69d5c'), STRAW2=new THREE.Color('#8c9a50'), PATHG=new THREE.Color('#6fa443'), RUT=new THREE.Color('#8a8058'), WOOD=new THREE.Color('#2f5a2c'), WOOD2=new THREE.Color('#4c7a3c');
+  const UND=new THREE.Color('#2a4a1b'), UND2=new THREE.Color('#3d6424'), MUD=new THREE.Color('#5b5950'), MUD2=new THREE.Color('#45453f'), WET=new THREE.Color('#7f8288');
   for(let i=0;i<tp.count;i++){
     const x=tp.getX(i), z=tp.getZ(i), y=fieldH(x,z), r=Math.hypot(x,z);
     tp.setY(i,y);
-    const n1=nz(x*.05,1,z*.05)*.5+.5, n2=nz(x*.17,4,z*.17)*.5+.5;
-    c.copy(STRAW2).lerp(STRAW,n1);
-    const pd=Math.abs(x-FPATH(z)), inField=1-smooth(55,75,r);
-    c.lerp(PATHG,(1-smooth(FPW-.2,FPW+.3,pd))*inField);
-    c.lerp(RUT,(1-smooth(.08,.28,Math.abs(pd-.55)))*inField*.7);
-    const k=.94+.1*n2; tc[i*3]=c.r*k; tc[i*3+1]=c.g*k; tc[i*3+2]=c.b*k;
+    const n1=nz(x*.05,1,z*.05)*.5+.5, n2=nz(x*.013,4,z*.013)*.5+.5, n3=nz(x*.004,7,z*.004)*.5+.5;
+    const m=smooth(fieldEdge(x,z)+2,fieldEdge(x,z)+12,r);
+    c.copy(UND).lerp(UND2,n1);
+    const mud=MUD.clone().lerp(MUD2,n2).lerp(WET,smooth(.6,.85,n3)*.35);
+    c.lerp(mud,m);
+    tc[i*3]=c.r; tc[i*3+1]=c.g; tc[i*3+2]=c.b;
   }
   T.setAttribute('color',new THREE.BufferAttribute(tc,3)); T.computeVertexNormals();
-  g.add(new THREE.Mesh(T,VC({shininess:2})));
+  g.add(new THREE.Mesh(T,VC({shininess:14,specular:0x333333})));
+  /* 갯벌 위에 낮게 깔린 아침 안개 */
+  const mist=softTex(22,'240,238,228',.3); mist.repeat.set(3,3);
+  const mm=mesh(new THREE.RingGeometry(80,700,64,2),new THREE.MeshBasicMaterial({map:mist,transparent:true,opacity:.55,depthWrite:false}),0,.6,0); mm.rotation.x=-Math.PI/2; g.add(mm);
+  /* 멀리 왼쪽, 갯벌 끝에 낮게 엎드린 숲 섬 */
+  [[-430,-520,170,42],[-610,-470,120,26],[-300,-600,70,18]].forEach(([x,z,rr,h],i)=>{
+    const ig=new THREE.SphereGeometry(1,40,16,0,TAU,0,Math.PI/2);
+    displace(ig,(px,py,pz)=>{ const k=1+.12*nz(px*3+i,py*2,pz*3); return [px*k,Math.pow(Math.max(py,0),.8)*(1+.15*nz(px*4,0,pz*4)),pz*k*.55]; });
+    const im=mesh(ig,M(i===1?'#4a6a5a':'#3b5c40',{shininess:2}),x,-.6,z); im.scale.set(rr,h,rr); g.add(im);
+  });
 
-  /* 풀: 허리 높이의 풀숲. 길 위에는 짧게 깎인 초록 풀만 */
-  const pdist=(x,z)=>Math.abs(x-FPATH(z));
-  const tall=[[],[],[]], short=[], TT=['#ffffff','#f6f2e2','#fffbe6','#ecebd2','#f2f6dc'];
-  for(let n=0,tries=0;n<22000&&tries<90000;tries++){
-    const near=R()<.85, x=(R()-.5)*(near?100:128), z=(R()-.5)*(near?100:128);
-    if(pdist(x,z)<FPW+.15||Math.hypot(x,z)>64) continue;
-    const s=.8+R()*.45; n++;
-    tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*(.85+R()*.35),sz:s,c:choice(R,TT)});
+  /* 풀숲: 빈틈 없이 빼곡하게. 앉으면 몸이 묻힌다 */
+  const tall=[[],[],[]], TT=['#ffffff','#f2f8e6','#fbffe9','#e6f0d4','#fff8dc'];
+  for(let n=0,tries=0;n<24000&&tries<90000;tries++){
+    const x=(R()-.5)*104, z=(R()-.5)*104;
+    if(Math.hypot(x,z)>60) continue;
+    const s=.85+R()*.4; n++;
+    tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*(.9+R()*.3),sz:s,c:choice(R,TT)});
   }
-  /* 바깥쪽 들녘: 큼직한 포기로 지평선 쪽까지 풀을 이어 붙인다 */
-  for(let n=0;n<4000;){
-    const a=R()*TAU, r=62+Math.pow(R(),.8)*36, x=Math.cos(a)*r, z=Math.sin(a)*r;
-    if(pdist(x,z)<FPW+.15) continue;
-    n++; const s=1.3+R()*.4;
-    tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*.8,sz:s,c:choice(R,TT)});
-  }
-  for(let i=0;i<1500;i++){
-    const z=(R()-.5)*120, x=FPATH(z)+(R()-.5)*2*FPW;
-    short.push({x,y:fieldH(x,z)-.02,z,sx:1,sy:.6+R()*.4,sz:1,c:choice(R,['#ffffff','#eaf6d8'])});
+  /* 바깥쪽: 큼직한 포기로 풀숲 끝(갯벌 가장자리)까지 이어 붙인다 */
+  for(let n=0,tries=0;n<5000&&tries<30000;tries++){
+    const a=R()*TAU, r=58+R()*26, x=Math.cos(a)*r, z=Math.sin(a)*r;
+    if(r>fieldEdge(x,z)+2) continue;
+    n++; const s=1.35+R()*.45;
+    tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*.85,sz:s,c:choice(R,TT)});
   }
   const grassMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.2);
-  [tuftGeo(1,18,.95,1.3,.42,.62),tuftGeo(2,16,1.05,1.45,.38,.72),tuftGeo(3,20,.85,1.2,.46,.5)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
-  g.add(instances(tuftGeo(4,10,.12,.26,.28,.05),grassMat,short));
+  [tuftGeo(1,18,1.0,1.35,.44,.22),tuftGeo(2,16,1.1,1.5,.4,.3),tuftGeo(3,20,.9,1.25,.48,.15)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
 
-  /* 억새 이삭: 풀숲 위로 드문드문 솟아 끝이 휘어져 있다 */
+  /* 풀숲 위로 드문드문 고개 숙인 이삭 */
   const plumes=[[],[],[]];
-  for(let n=0,tries=0;n<650&&tries<12000;tries++){
+  for(let n=0,tries=0;n<380&&tries<12000;tries++){
     const x=(R()-.5)*110, z=(R()-.5)*110, cl=nz(x*.06+2,1,z*.06)*.5+.5;
-    if(R()>.25+cl*.75||pdist(x,z)<FPW+.3||Math.hypot(x,z)>60) continue;
-    n++; const s=.85+R()*.4;
+    if(R()>.2+cl*.8||Math.hypot(x,z)>64) continue;
+    n++; const s=.75+R()*.3;
     plumes[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s,sz:s});
   }
   const plumeMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.12);
   [plumeGeo(11),plumeGeo(12),plumeGeo(13)].forEach((pg,i)=>g.add(instances(pg,plumeMat,plumes[i])));
 
-  /* 들꽃은 아주 드물게(개망초·민들레) */
-  const FL=[['#fbfbf4',8],['#f2d046',8]];
-  const stems=[], heads=FL.map(()=>[]);
-  for(let n=0;n<420;){
-    const x=(R()-.5)*100, z=(R()-.5)*100;
-    if(pdist(x,z)<FPW-.2) continue;
-    const near=pdist(x,z)<FPW+1.4; if(!near&&R()<.6) continue;   // 길가에 조금 더 많이
-    n++; const k=R()<.7?0:1, s=.8+R()*.5, it={x,y:fieldH(x,z)-.02,z,sx:s,sy:s*(.9+R()*.4),sz:s};
-    stems.push(it); heads[k].push(Object.assign({c:FL[k][0]},it));
-  }
-  const stemG=new THREE.CylinderGeometry(.005,.008,.5,4,3); stemG.translate(0,.25,0);
-  g.add(instances(stemG,swayMat(M('#4a7334',{shininess:0}),U,.2),stems));
-  FL.forEach((f,i)=>{
-    const hg=petalGeo(f[1],.5); hg.scale(.045,1,.045);
-    g.add(instances(hg,swayMat(new THREE.MeshPhongMaterial({color:0xffffff,side:THREE.DoubleSide,shininess:10,emissive:0x111111}),U,.2),heads[i]));
-  });
-
   const avoid=[];
-
-  /* 맑은 하늘에 아주 작은 구름 몇 점 */
-  [[.6,95,240,7],[-.5,120,280,5],[2.4,80,260,6]].forEach(([a,y,r,s])=>{
-    const cl=cloudCluster(Math.sin(a)*r,y,-Math.cos(a)*r,s,.75); cl.traverse(o=>{ if(o.material) o.material.fog=false; }); g.add(cl);
-  });
 
   /* 풀숲 위를 나는 작은 벌레와 나비 몇 마리 */
   const wingG=new THREE.PlaneGeometry(.1,.08); wingG.translate(.05,0,0); wingG.rotateX(-Math.PI/2);
@@ -193,8 +174,8 @@ function buildField(){
   const seeds=points(80,0,'#ffffff',.1,null,()=>[(R()-.5)*70,.6+R()*2.4,(R()-.5)*70]); seeds.material.blending=THREE.NormalBlending; seeds.material.opacity=.8; g.add(seeds);
   const sp=seeds.geometry.attributes.position;
 
-  return {group:g,fog:{c:0xc9dfea,n:45,f:280},bg:0xbcd8ea,bounds:{rect:[-FXH,FXH,-FXH,FXH]},avoid,
-    spawn:{x:FPATH(14),z:14},spawnJ:[30,26],groundH:fieldH,waterY:-1000,pitch:.2,pitchSit:.1,
+  return {group:g,fog:{c:0xe9e8e0,n:60,f:900},bg:0xe9e8e0,bounds:{rect:[-FXH,FXH,-FXH,FXH]},avoid,
+    spawn:{x:0,z:14},spawnJ:[30,26],groundH:fieldH,waterY:-1000,pitch:.2,pitchSit:.1,
     update(t,dt,me){
       const s=spd();
       U.value+=dt*s;
