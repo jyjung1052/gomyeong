@@ -170,13 +170,22 @@ function onTap(px,py){
   if(r.ground) walkTo(r.ground);
 }
 let ptr=null;
+/* 두 손가락 핀치: 벌리면 확대, 오므리면 축소 */
+const pts=new Map(); let pinch=null;
+const ZMIN=.35, ZMAX=2.2;
+const pdist=()=>{ const a=[...pts.values()]; return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1; };
 cv.addEventListener('pointerdown',e=>{
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===2){ ptr=null; pinch={d0:pdist(),z0:S.cam.zoom}; touch(); return; }
+  if(pts.size>2) return;
   ptr={id:e.pointerId,x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,moved:false};
   try{ cv.setPointerCapture(e.pointerId); }catch(err){}
   touch();
 });
 cv.addEventListener('pointermove',e=>{
   touch();
+  if(pts.has(e.pointerId)) pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&pts.size===2){ S.cam.zoom=clamp(pinch.z0*pinch.d0/pdist(),ZMIN,ZMAX); return; }
   if(ptr&&ptr.id===e.pointerId){
     if(!ptr.moved&&Math.hypot(e.clientX-ptr.x,e.clientY-ptr.y)>8) ptr.moved=true;
     if(ptr.moved){
@@ -192,12 +201,13 @@ cv.addEventListener('pointermove',e=>{
   }
 });
 cv.addEventListener('pointerup',e=>{
+  pts.delete(e.pointerId); if(pts.size<2) pinch=null;
   if(!ptr||ptr.id!==e.pointerId) return;
   const p=ptr; ptr=null;
   if(!p.moved){ const r=cv.getBoundingClientRect(); onTap(p.x-r.left,p.y-r.top); }
 });
-cv.addEventListener('pointercancel',()=>{ ptr=null; });
-cv.addEventListener('wheel',e=>{ e.preventDefault(); S.cam.zoom=clamp(S.cam.zoom+e.deltaY*.001,.6,1.7); touch(); },{passive:false});
+cv.addEventListener('pointercancel',e=>{ pts.delete(e.pointerId); if(pts.size<2) pinch=null; ptr=null; });
+cv.addEventListener('wheel',e=>{ e.preventDefault(); S.cam.zoom=clamp(S.cam.zoom+e.deltaY*.001,ZMIN,ZMAX); touch(); },{passive:false});
 
 const keyMap={ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right',ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down'};
 window.addEventListener('keydown',e=>{
