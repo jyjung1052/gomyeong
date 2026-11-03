@@ -167,11 +167,14 @@ function buildRain(){
     hutRail(cx,-pz); hutRail(cx,pz);
     sideRail(cx,-1,hi>0); sideRail(cx,1,hi<HUTS.length-1);
     const mat=mesh(new THREE.PlaneGeometry(3.2,2.2),M('#ffffff',{map:matTex,shininess:2}),cx+.3,H+.09,-.9); mat.rotation.x=-Math.PI/2; g.add(mat);
-    /* 방석 */
-    [[-1.9,-1.55,'#7f4f46',.1],[-1.05,-1.9,'#5f6f58',-.2],[-1.6,-0.75,'#8a6d4c',.3]].forEach(([dx,dz,c,rot])=>{
-      const cu=mesh(new THREE.CylinderGeometry(.33,.35,.08,24),M(c,{shininess:3}),cx+dx,H+.13,dz); cu.scale.set(1,1,.96); cu.rotation.y=rot; g.add(cu);
-      const tr=mesh(new THREE.TorusGeometry(.31,.022,6,24),M(c,{shininess:3}),cx+dx,H+.13,dz); tr.rotation.x=Math.PI/2; g.add(tr);
-    });
+    /* 소반과 찻주전자 */
+    const tb=new THREE.Group(); tb.position.set(cx-1.9,H+.08,-1.6);
+    tb.add(mesh(new THREE.CylinderGeometry(.36,.36,.05,28),M('#6b4a32',{shininess:20}),0,.34,0));
+    [0,2.1,4.2].forEach(a=>tb.add(mesh(new THREE.CylinderGeometry(.025,.03,.32,8),wood,Math.cos(a)*.24,.16,Math.sin(a)*.24)));
+    const pot=mesh(new THREE.SphereGeometry(.11,20,14),M('#4f5a55',{shininess:40}),0,.5,0); pot.scale.set(1,.8,1); tb.add(pot);
+    const sp=mesh(new THREE.CylinderGeometry(.015,.03,.12,8),M('#4f5a55'),.14,.52,0); sp.rotation.z=-1; tb.add(sp);
+    [[.2,.42,.2],[.12,.42,.28]].forEach(([x,y,z])=>tb.add(mesh(new THREE.CylinderGeometry(.05,.04,.05,14),M('#e9e4d8',{shininess:30}),x,y,z)));
+    g.add(tb); avoid.push({x:cx-1.9,z:-1.6,r:.55});
     /* 지붕 */
     const rg=new THREE.CylinderGeometry(.35,(W/2+.7)/Math.cos(Math.PI/4),RH.RISE,4,10,false); rg.rotateY(Math.PI/4);
     displace(rg,(x,y,z)=>[x,y+.06*nz(x*2.4,y*2,z*2.4),z]);
