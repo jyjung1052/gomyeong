@@ -182,11 +182,11 @@ const Sound=(()=>{
     },
     mountain(sc){
       const bp=mk.filt('bandpass',520,1.1);
-      const w=mk.bed(sc,noiseB,[bp],.34);
-      mk.lfo(sc,.05,.15,w.gain); mk.lfo(sc,.043,260,bp.frequency);
+      const w=mk.bed(sc,noiseB,[bp],.14);
+      mk.lfo(sc,.05,.06,w.gain); mk.lfo(sc,.043,260,bp.frequency);
       const bp2=mk.filt('bandpass',1500,7);
-      const h=mk.bed(sc,noiseW,[bp2],.012);
-      mk.lfo(sc,.07,.01,h.gain); mk.lfo(sc,.05,380,bp2.frequency);
+      const h=mk.bed(sc,noiseW,[bp2],.005);
+      mk.lfo(sc,.07,.004,h.gain); mk.lfo(sc,.05,380,bp2.frequency);
       sc.timers.push(setTimeout(()=>bell(sc),3000));
       mk.every(sc,16,30,()=>bell(sc));
     },

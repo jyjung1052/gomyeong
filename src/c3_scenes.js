@@ -13,6 +13,39 @@ function cloudCluster(x,y,z,s,op){
   });
   c.position.set(x,y,z); return c;
 }
+/* 이어 붙여도 티 나지 않는 구름 무늬(프랙탈 잡음) */
+function cloudTex(seed,cover,size){
+  const R=rng(seed), G=32, grid=Array.from({length:G*G},()=>R());
+  const val=(x,y,f,o)=>{
+    const fx=x*f, fy=y*f, ix=Math.floor(fx), iy=Math.floor(fy), tx=fx-ix, ty=fy-iy, sx=tx*tx*(3-2*tx), sy=ty*ty*(3-2*ty);
+    const q=(a,b)=>grid[(((b%f)+f)%f+o*5)%G*G+(((a%f)+f)%f+o*3)%G];
+    return lerp(lerp(q(ix,iy),q(ix+1,iy),sx),lerp(q(ix,iy+1),q(ix+1,iy+1),sx),sy);
+  };
+  const t=canvasTex(size,size,(g,w,h)=>{
+    const im=g.createImageData(w,h), d=im.data;
+    for(let j=0;j<h;j++) for(let i=0;i<w;i++){
+      const x=i/w, y=j/h;
+      const f=val(x,y,3,0)*.52+val(x,y,6,1)*.3+val(x,y,12,2)*.14+val(x,y,24,3)*.04;
+      const a=smooth(cover-.2,cover+.26,f), lump=val(x,y,6,1);
+      const k=(j*w+i)*4, sh=222+30*lump;
+      d[k]=sh; d[k+1]=sh; d[k+2]=Math.min(255,sh+6); d[k+3]=Math.round(255*a*(.5+.5*smooth(.25,.75,f)));
+    }
+    g.putImageData(im,0,0);
+  });
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+}
+/* 하늘에 길게 깔린 얇은 구름 띠 */
+function streakTex(seed){
+  const R=rng(seed);
+  return canvasTex(512,96,(g,w,h)=>{
+    for(let i=0;i<26;i++){
+      const x=w*.12+R()*w*.76, y=h*.5+(R()-.5)*h*.28, rx=40+R()*110, ry=6+R()*14, gr=g.createRadialGradient(0,0,0,0,0,1);
+      g.save(); g.translate(x,y); g.scale(rx,ry);
+      gr.addColorStop(0,'rgba(255,255,255,'+(.16+R()*.14)+')'); gr.addColorStop(1,'rgba(255,255,255,0)');
+      g.fillStyle=gr; g.beginPath(); g.arc(0,0,1,0,TAU); g.fill(); g.restore();
+    }
+  });
+}
 function softTex(n,rgb,alpha){
   const R=rng(5);
   const t=canvasTex(256,256,(g,w,h)=>{
@@ -282,16 +315,26 @@ function spireGeo(){
 }
 /* 겹겹이 이어지는 산맥: 멀수록 옅고 따뜻하게 흐려지는 한 바퀴의 능선. 해가 뜨는 쪽은 능선이 낮아져 틈이 생긴다 */
 function ridgeRing(r,baseDeg,ampDeg,seed,cool,haze,sunAz,notchDeg){
-  const SEG=360, g=new THREE.CylinderGeometry(r,r,1,SEG,1,true), p=g.attributes.position, col=new Float32Array(p.count*3);
+  const SEG=360, g=new THREE.CylinderGeometry(r,r,1,SEG,2,true), p=g.attributes.position, col=new Float32Array(p.count*3);
   const cT=new THREE.Color(cool), cH=new THREE.Color(haze), warm=new THREE.Color('#ffb98a'), c=new THREE.Color();
-  for(let i=0;i<p.count;i++){
-    const x=p.getX(i), z=p.getZ(i), th=Math.atan2(x,z), top=p.getY(i)>0;
-    const cx=Math.cos(th), sx=Math.sin(th);
+  const topY=new Float32Array(SEG+1);
+  for(let i=0;i<=SEG;i++){
+    const th=i/SEG*TAU, cx=Math.cos(th), sx=Math.sin(th);
     let d=th-sunAz; d=Math.atan2(Math.sin(d),Math.cos(d));
-    const A=baseDeg+ampDeg*(nz(cx*4,seed,sx*4)+.55*nz(cx*11,seed+3,sx*11)+.28*nz(cx*29,seed+7,sx*29))-notchDeg*Math.exp(-Math.pow(d/.2,2));
-    p.setY(i,top?r*Math.tan(A*Math.PI/180):-280);
-    const w=Math.pow((Math.cos(d)+1)/2,3);
-    if(top) c.copy(cT).lerp(warm,w*.5); else c.copy(cH).lerp(warm,w*.35);
+    /* 둥글게 굽이치는 능선: 낮은 주파수만 쓰고 뾰족한 잔 주름은 없앤다(소백산맥처럼 겹겹이 물결치는 모양) */
+    const A=baseDeg+ampDeg*(nz(cx*2.4,seed,sx*2.4)+.5*nz(cx*5.5,seed+3,sx*5.5)+.12*nz(cx*13,seed+7,sx*13))-notchDeg*Math.exp(-Math.pow(d/.2,2));
+    topY[i]=r*Math.tan(A*Math.PI/180);
+  }
+  /* 세 줄: 능선, 능선 아래 안개 낀 자락, 맨 아래 */
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i), z=p.getZ(i), yy=p.getY(i), th=Math.atan2(x,z), seg=Math.round(((th+TAU)%TAU)/TAU*SEG);
+    const top=topY[seg%(SEG)];
+    const row=yy>.25?0:(yy>-.25?1:2);
+    p.setY(i,row===0?top:(row===1?top-(18+r*.07):-280));
+    let d=th-sunAz; d=Math.atan2(Math.sin(d),Math.cos(d)); const w=Math.pow((Math.cos(d)+1)/2,3);
+    if(row===0) c.copy(cT).lerp(warm,w*.45);
+    else if(row===1) c.copy(cT).lerp(cH,.82).lerp(warm,w*.3);
+    else c.copy(cH).lerp(warm,w*.3);
     col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b;
   }
   g.setAttribute('color',new THREE.BufferAttribute(col,3));
@@ -308,23 +351,46 @@ function buildMountain(){
   g.add(glowSprite('#ffe2a8',230,sdir.x*SD,sdir.y*SD,sdir.z*SD,.9));
   g.add(glowSprite('#ff9a60',760,sdir.x*SD,sdir.y*SD,sdir.z*SD,.34));
   const disc=mesh(new THREE.CircleGeometry(12.5,40),B('#fff3cf',{fog:false}),sdir.x*(SD-4),sdir.y*(SD-4),sdir.z*(SD-4)); disc.lookAt(0,0,0); g.add(disc);
-  [[150,-15,3.6,'#3a4868','#c9929c',1.6],[230,-12,3.1,'#4f5f88','#d8a2a2',2.0],[320,-9,2.6,'#7482ab','#e4b5aa',2.8],[430,-6,2.1,'#9aa2c4','#eec3b0',3.4],[545,-2.3,1.5,'#c4bfd4','#f6d2b4',1.6]]
+  [[120,-17,2.6,'#2f3f5b','#c79ca0',1.2],[165,-14.5,2.8,'#3b4b69','#cfa5aa',1.5],[225,-12,2.8,'#485980','#d8b0b0',1.8],[295,-9.6,2.6,'#5a6b93','#e1bbb4',2.1],[365,-7.4,2.3,'#6f7ea6','#e8c6bb',2.4],[440,-5.4,2.0,'#8995b9','#eed1c2',2.6],[505,-3.7,1.7,'#a3aeca','#f3dac8',2.8],[548,-2.3,1.3,'#bfc6db','#f7e1cf',1.6]]
     .forEach(([r,base,amp,cool,haze,notch],i)=>g.add(ridgeRing(r,base,amp,i*5.3+1,cool,haze,SUNAZ,notch)));
 
   /* 정상: 편평한 화강암 바위마당 */
-  const SR=32;
-  const pg=new THREE.RingGeometry(.01,SR,112,44); pg.rotateX(-Math.PI/2);
+  const SR=17;
+  const base0=(x,z)=>.05*Math.sin(x*.5)*Math.cos(z*.45)+.04*nz(x*.7,0,z*.7)-.5*smooth(SR-1.2,SR,Math.hypot(x,z));
+  /* 정상 위에 또 얹은 계단식 돌산: 세 단. 오르내릴 수 있다 */
+  const TX=7.2, TZ=-1.6, TIERS=[[5.6,1.15],[3.9,2.3],[2.3,3.45]];
+  const tierH=(x,z)=>{ const r=Math.hypot(x-TX,z-TZ); let h=0; TIERS.forEach(([rr,hh])=>{ h=Math.max(h,hh*smooth(rr+.5,rr-.2,r)); }); return h; };
+  const groundH=(x,z)=>base0(x,z)+tierH(x,z);
+  const pg=new THREE.RingGeometry(.01,SR,80,26); pg.rotateX(-Math.PI/2);
   const pp=pg.attributes.position, pc=new Float32Array(pp.count*3), cc=new THREE.Color();
   const GR=new THREE.Color('#b9b8b0'), CR=new THREE.Color('#8d9094'), LI=new THREE.Color('#8f9d7c');
   for(let i=0;i<pp.count;i++){
     const x=pp.getX(i), z=pp.getZ(i), r=Math.hypot(x,z);
-    pp.setY(i,.05*Math.sin(x*.5)*Math.cos(z*.45)+.04*nz(x*.7,0,z*.7)-.5*smooth(SR-1.2,SR,r));
+    pp.setY(i,base0(x,z));
     const crack=smooth(.55,.75,Math.abs(nz(x*.9,0,z*.9))*2);
     cc.copy(GR).lerp(CR,crack*.6).lerp(LI,smooth(.55,.9,nz(x*.5+3,0,z*.5))*.5).lerp(CR,smooth(SR-2,SR,r)*.5);
     const k=.95+.1*nz(x*2,0,z*2); pc[i*3]=cc.r*k; pc[i*3+1]=cc.g*k; pc[i*3+2]=cc.b*k;
   }
   pg.setAttribute('color',new THREE.BufferAttribute(pc,3)); pg.computeVertexNormals();
   g.add(new THREE.Mesh(pg,VC({shininess:6})));
+  {
+    const GA=new THREE.Color('#bdbbb2'), GB=new THREE.Color('#8f9296'), MS=new THREE.Color('#8f9d7c'), c2=new THREE.Color();
+    TIERS.forEach(([rr,hh],k)=>{
+      const prev=k?TIERS[k-1][1]:0, th=hh-prev+.5;
+      const cg=new THREE.CylinderGeometry(rr-.15,rr+.45,th,44,6,false), cp2=cg.attributes.position, cl2=new Float32Array(cp2.count*3);
+      for(let i=0;i<cp2.count;i++){
+        const x=cp2.getX(i), y=cp2.getY(i), z=cp2.getZ(i), a=Math.atan2(z,x), r=Math.hypot(x,z);
+        const kk=1+.07*nz(Math.cos(a)*2+k*3,y*.8,Math.sin(a)*2)+.04*Math.sin(a*6+k);
+        const onTop=y>th/2-.01;
+        cp2.setXYZ(i,x*kk,y+(onTop?.03*nz(x*1.4,k,z*1.4):0),z*kk);
+        const cr=smooth(.55,.75,Math.abs(nz(x*1.1,y*.9+k,z*1.1))*2);
+        c2.copy(GA).lerp(GB,cr*.55+(onTop?0:.18)).lerp(MS,onTop?smooth(.5,.9,nz(x*.8+9,0,z*.8))*.3:0);
+        cl2[i*3]=c2.r; cl2[i*3+1]=c2.g; cl2[i*3+2]=c2.b;
+      }
+      cg.setAttribute('color',new THREE.BufferAttribute(cl2,3)); cg.computeVertexNormals();
+      g.add(mesh(cg,VC({shininess:5}),TX,prev+th/2-.5,TZ));
+    });
+  }
   /* 정상 아래로 곤두박질치는 절벽 */
   const cliffG=new THREE.CylinderGeometry(SR,SR+36,230,112,26,true), cp=cliffG.attributes.position, ccol=new Float32Array(cp.count*3);
   const CA=new THREE.Color('#c4c6c2'), CB=new THREE.Color('#6c747d');
@@ -340,22 +406,29 @@ function buildMountain(){
   const cliff=new THREE.Mesh(cliffG,VC({side:THREE.DoubleSide,shininess:4})); cliff.position.y=-115-.2; g.add(cliff);
 
   /* 구름바다(운해) */
-  const seaLayer=(y,rgb,a,rep,op)=>{
-    const tx=softTex(26,rgb,a); tx.repeat.set(rep,rep);
-    const m=mesh(new THREE.PlaneGeometry(1500,1500),new THREE.MeshBasicMaterial({map:tx,transparent:true,opacity:op,depthWrite:false}),0,y,0); m.rotation.x=-Math.PI/2; g.add(m); return tx;
+  const seaLayer=(y,tint,seed,cover,rep,op)=>{
+    const tx=cloudTex(seed,cover,320); tx.repeat.set(rep,rep);
+    const m=mesh(new THREE.PlaneGeometry(1500,1500),new THREE.MeshBasicMaterial({map:tx,color:tint,transparent:true,opacity:op,depthWrite:false}),0,y,0); m.rotation.x=-Math.PI/2; g.add(m); return tx;
   };
-  const sea=[seaLayer(-98,'188,176,208',.5,6,.85),seaLayer(-90,'255,222,206',.55,5,.9),seaLayer(-82,'255,242,232',.5,4,.75)];
-  const clouds=[]; for(let i=0;i<46;i++){
-    const a=R()*TAU, d=30+R()*260, c=cloudCluster(Math.cos(a)*d,-94+R()*10,Math.sin(a)*d,7+R()*14,.95);
-    c.userData={x0:c.position.x,v:1+R()*2}; g.add(c); clouds.push(c);
+  const sea=[seaLayer(-100,'#b3a6cc',3,.46,3,.9),seaLayer(-92,'#f2cdbf',8,.5,4,.88),seaLayer(-84,'#ffe9dc',14,.55,3,.8),seaLayer(-76,'#fff7f0',21,.6,5,.55)];
+  /* 능선 사이에 낀 아침 안개 */
+  const mistTex=canvasTex(8,128,(c,w,h)=>{ const gr=c.createLinearGradient(0,0,0,h); gr.addColorStop(0,'rgba(255,236,222,0)'); gr.addColorStop(.55,'rgba(255,236,222,.5)'); gr.addColorStop(1,'rgba(255,236,222,0)'); c.fillStyle=gr; c.fillRect(0,0,w,h); });
+  [[190,-34,70],[330,-22,90],[470,-12,110]].forEach(([r,y,hh])=>{ const m=mesh(new THREE.CylinderGeometry(r,r,hh,48,1,true),new THREE.MeshBasicMaterial({map:mistTex,transparent:true,depthWrite:false,side:THREE.BackSide,fog:false}),0,y,0); g.add(m); });
+  /* 하늘에 길게 깔린 구름 띠: 해 쪽은 붉게 물든다 */
+  const clouds=[]; const stk=[streakTex(4),streakTex(9)];
+  for(let i=0;i<9;i++){
+    const az=SUNAZ+(R()-.5)*4.4, d=420, el=.05+R()*.2;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:stk[i%2],color:i<4?0xffcfae:0xfff1e6,transparent:true,opacity:.55+R()*.25,depthWrite:false,fog:false}));
+    sp.position.set(Math.sin(az)*d,Math.sin(el)*d,Math.cos(az)*d); sp.scale.set(170+R()*140,26+R()*18,1);
+    sp.userData={x0:sp.position.x,v:.6+R()*1.0}; g.add(sp); clouds.push(sp);
   }
-  for(let i=0;i<5;i++){ const a=R()*TAU, d=80+R()*220, c=cloudCluster(Math.cos(a)*d,-30+R()*12,Math.sin(a)*d,6+R()*8,.7); c.userData={x0:c.position.x,v:2+R()*2}; g.add(c); clouds.push(c); }
 
   /* 정상의 소나무, 바위, 돌탑, 정상석 */
   const avoid=[];
-  const boulders=[]; for(let i=0;i<46;i++){
-    const a=R()*TAU, r=i<16?SR-3.4+R()*1.8:Math.sqrt(R())*(SR-5), s=i<16?.5+R()*.9:.35+R()*.7;
-    if(i>=16&&(Math.hypot(Math.cos(a)*r+3.7,Math.sin(a)*r+3.3)<2||Math.hypot(Math.cos(a)*r,Math.sin(a)*r-2)<4)){ continue; }
+  const boulders=[]; for(let i=0;i<30;i++){
+    const a=R()*TAU, r=i<12?SR-3+R()*1.6:Math.sqrt(R())*(SR-4), s=i<12?.5+R()*.9:.3+R()*.55;
+    if(i>=12&&(Math.hypot(Math.cos(a)*r+3.7,Math.sin(a)*r+3.3)<2||Math.hypot(Math.cos(a)*r,Math.sin(a)*r-2)<3.5||Math.hypot(Math.cos(a)*r-TX,Math.sin(a)*r-TZ)<6.6)){ continue; }
+    if(i<12&&Math.hypot(Math.cos(a)*r-TX,Math.sin(a)*r-TZ)<7) continue;
     boulders.push({x:Math.cos(a)*r,y:s*.15,z:Math.sin(a)*r,sx:s*1.3,sy:s*.9,sz:s,ry:R()*6,c:choice(R,['#c8c6bd','#b9b8b0','#a7aaa6','#d2d0c6'])});
     avoid.push({x:Math.cos(a)*r,z:Math.sin(a)*r,r:s*1.1});
   }
@@ -363,6 +436,16 @@ function buildMountain(){
   const cairn=[]; [[1,.5],[.82,.42],[.66,.36],[.5,.3],[.36,.26],[.22,.22]].forEach(([w,h],i)=>{ cairn.push({x:-3.7+(R()-.5)*.1,y:.15+[0,.48,.88,1.2,1.48,1.72][i],z:-3.3,sx:w,sy:h,sz:w*.9,ry:R()*3,c:'#b2b1a8'}); });
   g.add(instances(rockGeo(),VC({vertexColors:false}),cairn));
   avoid.push({x:-3.7,z:-3.3,r:.85});
+  /* 바위틈에 뿌리내린 아주 작은 나무들 */
+  const tiny=[]; { let guard=0;
+    while(tiny.length<18&&guard++<600){
+      const a=R()*TAU, r=4.5+R()*(SR-8), x=Math.cos(a)*r, z=Math.sin(a)*r;
+      if(Math.hypot(x+3.7,z+3.3)<2.2||Math.hypot(x,z-2)<3||Math.hypot(x-TX,z-TZ)<7.2) continue;
+      if(avoid.some(o=>Math.hypot(o.x-x,o.z-z)<o.r+.6)) continue;
+      const s2=.2+R()*.22; tiny.push({x,y:groundH(x,z)-.04,z,sx:s2,sy:s2*(.85+R()*.35),sz:s2,ry:R()*6,c:choice(R,TINT)}); avoid.push({x,z,r:.22});
+    }
+  }
+  g.add(instances(pineGeo(),VC(),tiny));
   /* 솟는 안개와 매 */
   const wisps=points(70,0,'#ffffff',2.4,null,()=>{ const a=R()*TAU, r=SR+3+R()*30; return [Math.cos(a)*r,-85+R()*65,Math.sin(a)*r]; });
   wisps.material.opacity=.3; wisps.material.fog=false; g.add(wisps);
@@ -373,7 +456,7 @@ function buildMountain(){
     l.add(mesh(new THREE.BoxGeometry(1.5,.05,.34),wm,-.75,0,0)); r.add(mesh(new THREE.BoxGeometry(1.5,.05,.34),wm,.75,0,0));
     b.add(l,r); b.userData={l,r,p:i*1.7,rad:34+i*9}; g.add(b); birds.push(b);
   }
-  return {group:g,fog:{c:0xf0d8c6,n:140,f:900},bg:0xf0d8c6,bounds:{circle:[0,0,SR-2.6]},avoid,spawn:{x:0,z:2},spawnJ:[24],pitch:.22,pitchSit:.1,
+  return {group:g,fog:{c:0xf0d8c6,n:140,f:900},bg:0xf0d8c6,bounds:{circle:[0,0,SR-2.6]},avoid,spawn:{x:0,z:2},spawnJ:[8],groundH,waterY:-1000,pitch:.22,pitchSit:.1,
     update(t,dt){
       const s=spd();
       clouds.forEach(c=>{ c.position.x=((((c.userData.x0+t*c.userData.v*s)+330)%660)+660)%660-330; });
