@@ -277,7 +277,7 @@ const Sound=(()=>{
         mk.lfo(sc,lf,dep,b.frequency); mk.lfo(sc,lf*.7,gn*.6,o.gain);
       });
       sc.bus=realBus;
-      sampleLoop(sc,'snd/valley.m4a',2.8,()=>syn.gain.setTargetAtTime(0,ctx.currentTime,.8));
+      sampleLoop(sc,'snd/valley2.m4a',3.3,()=>syn.gain.setTargetAtTime(0,ctx.currentTime,.8));
       mk.every(sc,5,12,()=>bird(sc));
     },
     cave(sc){
