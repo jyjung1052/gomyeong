@@ -121,19 +121,15 @@ const Sound=(()=>{
   /* 연잎에 빗방울이 떨어지는 소리: 잎 몸통이 울리는 낮은 '톡'과 물방울이 튀는 높은 '타닥' */
   function leafTap(sc,loud){
     if(!ctx||sc.dead) return;
-    const t=ctx.currentTime, pan=rnd(-.9,.9), pk=rnd(.012,.04)*(loud?1.8:1);
+    const t=ctx.currentTime, pan=rnd(-.9,.9), pk=rnd(.006,.02)*(loud?1.8:1);
     const s=ctx.createBufferSource(); s.buffer=noiseW;
     const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=rnd(1800,4200); bp.Q.value=rnd(1.2,3);
     const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(pk,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+rnd(.03,.07));
     s.connect(bp); bp.connect(g);
-    const o=ctx.createOscillator(); o.type='sine'; const f0=rnd(240,420);
-    o.frequency.setValueAtTime(f0*1.25,t); o.frequency.exponentialRampToValueAtTime(f0,t+.05);
-    const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(pk*.35,t+.004); og.gain.exponentialRampToValueAtTime(.0001,t+.09);
-    o.connect(og);
-    const mix=ctx.createGain(); g.connect(mix); og.connect(mix);
+    const mix=ctx.createGain(); g.connect(mix);
     let out=mix; if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=pan; mix.connect(p); out=p; }
     out.connect(sc.bus);
-    s.start(t,rnd(0,3)); s.stop(t+.1); o.start(t); o.stop(t+.12);
+    s.start(t,rnd(0,3)); s.stop(t+.1);
   }
   /* 연못에 물방울이 떨어지는 소리: 위로 솟는 '똑/퐁' (큰 방울은 낮고 길게) */
   function pondDrop(sc,big){
@@ -233,7 +229,7 @@ const Sound=(()=>{
       sc.timers.push(setTimeout(surge,5000));
       mk.every(sc,16,28,surge);
       /* 연잎에 부딪는 소리는 낮고 은은하게(톡 소리만, 뽁뽁거리는 소리는 없음) */
-      mk.every(sc,.12,.26,()=>leafTap(sc,false));
+      mk.every(sc,.09,.2,()=>leafTap(sc,false));
       sc.timers.push(setTimeout(()=>thunder(sc),9000));
       mk.every(sc,35,80,()=>thunder(sc));
     },
@@ -295,7 +291,7 @@ const Sound=(()=>{
       tone(cur,rnd(1100,1700),rnd(700,900),.22,.16,'sine',1.1,rnd(-.3,.3));
     }
     if(kind==='eave'&&cur.name==='rain'){
-      leafTap(cur,true);
+      tone(cur,rnd(900,1500),rnd(450,650),.13,.09,'sine',.6,rnd(-.7,.7));
     }
     if(kind==='splash'&&(cur.name==='valley'||cur.name==='sea')){
       const t=ctx.currentTime, s=ctx.createBufferSource(); s.buffer=noiseW;
