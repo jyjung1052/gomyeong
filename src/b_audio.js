@@ -231,15 +231,8 @@ const Sound=(()=>{
       });
     },
     mountain(sc){
-      const bp=mk.filt('bandpass',520,1.1);
-      /* 아주 잔잔한 바람(작게) */
-      const w=mk.bed(sc,noiseB,[bp],.035);
-      mk.lfo(sc,.05,.015,w.gain); mk.lfo(sc,.043,260,bp.frequency);
-      const bp2=mk.filt('bandpass',1500,7);
-      const h=mk.bed(sc,noiseW,[bp2],.0012);
-      mk.lfo(sc,.07,.001,h.gain); mk.lfo(sc,.05,380,bp2.frequency);
-      /* 새벽 산의 새소리와 고요함(사용자 녹음) */
-      sampleLoop(sc,'snd/mountain2.m4a',3.2);
+      /* 새벽 산의 소리: 사용자가 찍은 영상 소리 그대로(가공 없음) */
+      sampleLoop(sc,'snd/mountain3.m4a',1.0);
       sc.timers.push(setTimeout(()=>bell(sc),3000));
       mk.every(sc,16,30,()=>bell(sc));
     },
