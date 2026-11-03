@@ -79,7 +79,8 @@ const Sound=(()=>{
       const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true;
       s.loopStart=.06; s.loopEnd=buf.duration-.06;           /* AAC 앞뒤 무음 패딩을 건너뛴다 */
       const out=ctx.createGain(), t=ctx.currentTime; out.gain.setValueAtTime(0,t); out.gain.linearRampToValueAtTime(g,t+2.5);
-      s.connect(out); out.connect(sc.bus); s.start(0,.06+Math.random()*(buf.duration-1)); sc.srcs.push(s);
+      const lim=ctx.createDynamicsCompressor(); lim.threshold.value=-4; lim.knee.value=2; lim.ratio.value=12; lim.attack.value=.004; lim.release.value=.2;   /* 키운 소리가 찢어지지 않게 */
+      s.connect(out); out.connect(lim); lim.connect(sc.bus); s.start(0,.06+Math.random()*(buf.duration-1)); sc.srcs.push(s);
       if(onReady) onReady();
     }).catch(()=>{});
   }
@@ -277,7 +278,7 @@ const Sound=(()=>{
         mk.lfo(sc,lf,dep,b.frequency); mk.lfo(sc,lf*.7,gn*.6,o.gain);
       });
       sc.bus=realBus;
-      sampleLoop(sc,'snd/valley2.m4a',3.3,()=>syn.gain.setTargetAtTime(0,ctx.currentTime,.8));
+      sampleLoop(sc,'snd/valley.m4a',5.2,()=>syn.gain.setTargetAtTime(0,ctx.currentTime,.8));
       mk.every(sc,5,12,()=>bird(sc));
     },
     cave(sc){
