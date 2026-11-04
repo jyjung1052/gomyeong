@@ -143,7 +143,7 @@ function buildField(){
     n++; const s=1.35+R()*.45;
     tall[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s*.85,sz:s,c:choice(R,TT)});
   }
-  const grassMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.2);
+  const grassMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.2); grassMat.userData.noCut=true;   // 풀숲에는 몸이 묻힌다
   [tuftGeo(1,18,1.0,1.35,.44,.8),tuftGeo(2,16,1.1,1.5,.4,.84),tuftGeo(3,20,.9,1.25,.48,.76)].forEach((tg,i)=>g.add(instances(tg,grassMat,tall[i])));
 
   /* 풀숲 위로 드문드문 고개 숙인 이삭 */
@@ -154,7 +154,7 @@ function buildField(){
     n++; const s=.75+R()*.3;
     plumes[n%3].push({x,y:fieldH(x,z)-.03,z,sx:s,sy:s,sz:s});
   }
-  const plumeMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.12);
+  const plumeMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),U,.12); plumeMat.userData.noCut=true;
   [plumeGeo(11),plumeGeo(12),plumeGeo(13)].forEach((pg,i)=>g.add(instances(pg,plumeMat,plumes[i])));
 
   const avoid=[];

@@ -17,8 +17,37 @@ const figure=buildFigure(); scene.add(figure.root);
 const hub=buildHub();
 const cache={};
 let world=null;
+/* 시야 뚫기: 카메라와 내 몸 사이를 가리는 나무·바위(여러 개 찍어 낸 물체)는 그 부분만 비워 보여 준다.
+   들녘 풀숲처럼 몸이 묻혀야 하는 것은 material.userData.noCut 으로 뺀다 */
+const CUT={uCam:{value:new THREE.Vector3()},uMe:{value:new THREE.Vector3()},uR:{value:1.15}};
+function cutaway(group){
+  group.traverse(o=>{
+    if(!o.isInstancedMesh) return;
+    (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{
+      if(!m||m.userData.noCut||m.userData.cutDone) return;
+      m.userData.cutDone=true;
+      const prev=m.onBeforeCompile, prevKey=m.customProgramCacheKey;
+      m.onBeforeCompile=(sh,r)=>{
+        if(prev) prev.call(m,sh,r);
+        sh.uniforms.uCam=CUT.uCam; sh.uniforms.uMe=CUT.uMe; sh.uniforms.uR=CUT.uR;
+        sh.vertexShader='varying vec3 vCutW;\n'+sh.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
+          vec4 cutP=vec4(transformed,1.0);
+          #ifdef USE_INSTANCING
+            cutP=instanceMatrix*cutP;
+          #endif
+          vCutW=(modelMatrix*cutP).xyz;`);
+        sh.fragmentShader='varying vec3 vCutW;\nuniform vec3 uCam;\nuniform vec3 uMe;\nuniform float uR;\n'+sh.fragmentShader.replace('void main() {',`void main() {
+          vec3 cutAB=uMe-uCam; float cutT=dot(vCutW-uCam,cutAB)/max(dot(cutAB,cutAB),1e-4);
+          if(cutT>0.0&&cutT<0.93){ float cutD=length(vCutW-(uCam+cutAB*cutT)); if(cutD<uR*(0.3+0.7*cutT)) discard; }`);
+      };
+      m.customProgramCacheKey=()=>'cut'+(prevKey?prevKey.call(m):'');
+      m.needsUpdate=true;
+    });
+  });
+}
 function activate(w){
   if(world) scene.remove(world.group);
+  cutaway(w.group);
   world=w; scene.add(w.group);
   scene.fog=new THREE.Fog(w.fog.c,w.fog.n,w.fog.f);
   scene.background=new THREE.Color(w.bg);
@@ -361,6 +390,7 @@ function update(dt){
   c.pos.set(c.tgt.x+Math.sin(c.yaw)*cp*d,Math.max(.5,c.tgt.y+Math.sin(c.pitch)*d),c.tgt.z+Math.cos(c.yaw)*cp*d);
   if(world.groundH){ const lo=Math.max(world.groundH(c.pos.x,c.pos.z),world.waterY)+.7; if(c.pos.y<lo) c.pos.y=lo; }
   camera.position.copy(c.pos); camera.lookAt(c.tgt);
+  CUT.uCam.value.copy(c.pos); CUT.uMe.value.set(m.x,P.y+(m.sitting?.5:.85),m.z);
 }
 let last=performance.now();
 function frame(now){
