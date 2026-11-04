@@ -189,7 +189,7 @@ function buildFigure(){
   ring.rotation.x=-Math.PI/2; root.add(ring);
 
   return {
-    root, shadow,
+    root, shadow, flats:[shadow,halo,ring],
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
       legsStand.visible=!sit; legsSit.visible=sit;

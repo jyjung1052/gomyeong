@@ -325,6 +325,15 @@ if(document.fonts&&document.fonts.load){
 const angDiff=(a,b)=>{ let d=(b-a)%TAU; if(d>Math.PI) d-=TAU; if(d<-Math.PI) d+=TAU; return d; };
 let breathLabel='';
 /* 발 높이와 헤엄 자세: 계곡처럼 땅 높이가 있는 장면에서 쓴다 */
+/* 발밑 그림자·빛 고리를 바닥 기울기에 맞춰 눕힌다(비탈에서 반쯤 묻히지 않게) */
+const _n=new THREE.Vector3(), _q=new THREE.Quaternion(), _qi=new THREE.Quaternion(), _Z=new THREE.Vector3(0,0,1);
+function alignFlats(fig,x,z){
+  const w=world; if(!fig.flats) return;
+  if(w&&w.groundH){ const e=.35, hx=(w.groundH(x+e,z)-w.groundH(x-e,z))/(2*e), hz=(w.groundH(x,z+e)-w.groundH(x,z-e))/(2*e); _n.set(-hx,1,-hz).normalize(); }
+  else _n.set(0,1,0);
+  _q.setFromUnitVectors(_Z,_n); _qi.copy(fig.root.quaternion).invert();
+  fig.flats.forEach(f=>f.quaternion.copy(_qi).multiply(_q));
+}
 function footPose(x,z){
   const w=world;
   if(!w||!w.groundH) return {y:(w&&w.floorY)||0,k:0,dep:0};
@@ -384,6 +393,7 @@ function update(dt){
   figure.root.rotation.order='YXZ';
   figure.root.rotation.y=m.heading; figure.root.rotation.x=m.swim*1.25-m.lieK*Math.PI/2;
   figure.shadow.visible=!(world.groundH&&P.dep>.05)&&m.lieK<.3;
+  alignFlats(figure,m.x,m.z);
   const haloK=m.sitting?clamp(S.sitTime/45,0,1)*.9+.1:0;
   figure.update(S.t,m.sitting,m.walking,m.breath,S.realm?S.realm.color:'#ffffff',haloK,S.breathOn&&S.mode==='scene',m.lie);
   Together.tick(dt,S.t);

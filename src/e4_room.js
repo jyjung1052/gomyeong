@@ -97,6 +97,7 @@ const Together=(()=>{
       const ly=o.sit&&o.lie?1:0;
       o.fig.root.position.set(o.x,Q.y+.27*ly,o.z); o.fig.root.rotation.order='YXZ'; o.fig.root.rotation.y=o.h; o.fig.root.rotation.x=Q.k*1.25-ly*Math.PI/2;
       o.fig.shadow.visible=!(world.groundH&&Q.dep>.05)&&!ly;
+      alignFlats(o.fig,o.x,o.z);
       o.fig.update(t,o.sit,o.walk,o.breath,S.realm?S.realm.color:'#ffffff',o.sit?.4:0,false,o.lie);
       o.lab.position.set(0,ly?0:(o.sit?1.85:2.45),ly?1.0:0);
     });
