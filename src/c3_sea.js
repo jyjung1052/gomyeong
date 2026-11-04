@@ -53,16 +53,16 @@ function buildSea(){
   sand.material=M('#ffffff',{map:st,vertexColors:true,shininess:3}); g.add(sand);
 
   /* 바닷물: 가까운 곳은 맑은 에메랄드빛, 멀수록 깊은 푸른빛 */
-  const wg=new THREE.PlaneGeometry(900,400,100,44); wg.rotateX(-Math.PI/2);
+  const wg=new THREE.PlaneGeometry(900,305,100,36); wg.rotateX(-Math.PI/2);   /* 물가(z=-1)에서 끝난다: 모래 밑으로 이어지면 해변 곳곳에서 물이 솟아 보인다 */
   const wcol=new Float32Array(wg.attributes.position.count*3), wc=new THREE.Color(), AQ=new THREE.Color('#86e6d8'), TQ=new THREE.Color('#3fbccb'), BL=new THREE.Color('#1f7fb0');
   for(let i=0;i<wg.attributes.position.count;i++){
-    const d=-1.7-(wg.attributes.position.getZ(i)-106);
+    const d=-1.7-(wg.attributes.position.getZ(i)-153.5);
     wc.copy(AQ).lerp(TQ,smooth(4,28,d)).lerp(BL,smooth(40,140,d));
     wcol[i*3]=wc.r; wcol[i*3+1]=wc.g; wcol[i*3+2]=wc.b;
   }
   wg.setAttribute('color',new THREE.BufferAttribute(wcol,3));
   const water=new THREE.Mesh(wg,M('#ffffff',{vertexColors:true,shininess:90,specular:0xbbddee}));
-  water.position.set(0,-.15,-106); g.add(water);
+  water.position.set(0,-.15,-153.5); g.add(water);
   const wp=wg.attributes.position, base=[]; for(let i=0;i<wp.count;i++) base.push([wp.getX(i),wp.getZ(i)]);
   const foam=mesh(new THREE.PlaneGeometry(900,.8),B('#ffffff',{transparent:true,opacity:.5,depthWrite:false}),0,-.1,-2.1); foam.rotation.x=-Math.PI/2; g.add(foam);
   const foam2=foam.clone(); foam2.material=foam.material.clone(); g.add(foam2);
@@ -101,7 +101,7 @@ function buildSea(){
   function setBand(m,rows,far,near,off){
     const p=m.geometry.attributes.position;
     for(let r=0;r<=rows;r++) for(let i=0;i<=NC;i++){
-      const x=clamp(bcx-SW/2+i,-72,72), z=lerp(far[i],near[i],r/rows); p.setXYZ(r*(NC+1)+i,x,sandH(x,z)+off,z);
+      const x=bcx-SW/2+i, z=lerp(far[i],near[i],r/rows); p.setXYZ(r*(NC+1)+i,x,sandH(x,z)+off,z);
     }
     p.needsUpdate=true;
   }
@@ -210,7 +210,7 @@ function buildSea(){
       });
 
       /* 밀려오는 파도 */
-      bcx=me?Math.round(me.x):0;
+      bcx=me?clamp(Math.round(me.x),-72+SW/2,72-SW/2):0;   /* 파도 띠는 늘 해변 안쪽에 온전히 */
       if(me&&Math.abs(me.x-(X0+PSX/2))>16){ X0=Math.round(me.x-PSX/2); pc.clearRect(0,0,PW,PH); fitDecal(); dirty=true; }
       const cyc=Math.floor(t/P), u=(t-cyc*P)/P, zMax=lerp(-1.2,1.6,rng(cyc*977+13)());
       let sw=0; if(u<.3) sw=easeIO(u/.3); else if(u<.38) sw=1; else if(u<.9) sw=1-easeIO((u-.38)/.52);
