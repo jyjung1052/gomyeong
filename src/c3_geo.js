@@ -110,3 +110,47 @@ function starGeo(){
   const c=new THREE.SphereGeometry(1,12,8); c.scale(.14,.08,.14); parts.push({geo:c,color:'#ffffff'});
   return merge(parts);
 }
+
+/* 바위산 소나무: 구불구불 휜 붉은 줄기, 옆으로 뻗은 가지, 가지 끝마다 납작하게 층진 솔잎 뭉치. seed마다 모양이 다르다 */
+function koreanPineGeo(seed){
+  const R=rng(seed), parts=[];
+  const H=4.6+R()*2.2, lean=(R()-.5)*1.6, wob=.25+R()*.5, ph=R()*6, dir=R()*TAU;
+  const bx=y=>{ const t=y/H; return Math.cos(dir)*(lean*t*t+wob*Math.sin(t*4.2+ph)*t); };
+  const bz=y=>{ const t=y/H; return Math.sin(dir)*(lean*t*t)+wob*.6*Math.cos(t*3.6+ph)*t; };
+  /* 줄기: 아래는 굵고 위로 갈수록 가늘게, 껍질 결이 거칠다 */
+  const trunk=new THREE.CylinderGeometry(.12,.3,H,9,16); trunk.translate(0,H/2,0);
+  displace(trunk,(x,y,z)=>{ const k=1+.12*nz(x*6,y*3,z*6)+.06*Math.sin(Math.atan2(z,x)*5+y*2); return [x*k+bx(y),y,z*k+bz(y)]; });
+  parts.push({geo:trunk,color:'#8a5a3c',shade:y=>y<H*.35?.62+.5*(y/(H*.35))*.6:.9+.2*nz(y,1,2)});
+  /* 뿌리: 바위를 움켜쥔 듯 밑동이 몇 갈래로 퍼진다 */
+  for(let i=0;i<4;i++){
+    const a=i/4*TAU+R()*.8, rt=new THREE.CylinderGeometry(.04,.13,.9,6,3); rt.translate(0,.45,0); rt.rotateZ(-1.25); rt.rotateY(a); rt.translate(0,.08,0);
+    parts.push({geo:rt,color:'#6e4a33'});
+  }
+  /* 솔잎 뭉치: 납작한 구름 모양 덩어리 2~3개를 겹친다 */
+  const pad=(cx,cy,cz,r)=>{
+    const n=2+Math.floor(R()*2);
+    for(let k=0;k<n;k++){
+      const g=new THREE.SphereGeometry(1,14,9), ox=(R()-.5)*r*.9, oz=(R()-.5)*r*.9, oy=(R()-.3)*r*.18, rr=r*(.55+R()*.45);
+      g.scale(rr,rr*(.3+R()*.12),rr*(.8+R()*.3));
+      displace(g,(x,y,z)=>{ const q=1+.22*nz(x*3.1+seed,y*4,z*3.1)+.1*nz(x*9,y*9,z*9); return [x*q,y*q,z*q]; });
+      g.translate(cx+ox,cy+oy,cz+oz);
+      const top=cy+oy, hh=rr*.35;
+      parts.push({geo:g,color:R()<.5?'#3d6a3a':'#46703c',shade:y=>.55+.6*clamp((y-(top-hh))/(hh*2),0,1)});
+    }
+  };
+  /* 가지: 줄기 위쪽 절반에서 옆으로 뻗어 끝이 살짝 들린다 */
+  const nb=3+Math.floor(R()*4);
+  for(let i=0;i<nb;i++){
+    const y0=H*(.42+.5*i/nb+R()*.06), a=dir+i*2.4+(R()-.5)*.8, L=1.1+R()*1.5*(1-i/nb*.5);
+    const sx=bx(y0), sz=bz(y0), ex=sx+Math.cos(a)*L, ez=sz+Math.sin(a)*L, ey=y0+.25+R()*.5;
+    const br=new THREE.CylinderGeometry(.03,.08,1,6,4); br.translate(0,.5,0);
+    const v=new THREE.Vector3(ex-sx,ey-y0,ez-sz), len=v.length(); br.scale(1,len,1);
+    const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize()); br.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(q)); br.translate(sx,y0,sz);
+    displace(br,(x,y,z)=>[x+.04*nz(y*4,x,z),y,z+.04*nz(x,y*4,z)]);
+    parts.push({geo:br,color:'#7d5236'});
+    pad(ex,ey+.05,ez,.75+R()*.55);
+  }
+  /* 꼭대기 뭉치 */
+  pad(bx(H),H-.1,bz(H),.9+R()*.5);
+  return merge(parts);
+}

@@ -479,10 +479,12 @@ function buildMountain(){
       const a=R()*TAU, r=4.5+R()*(SR-8), x=Math.cos(a)*r, z=Math.sin(a)*r;
       if(Math.hypot(x+3.7,z+3.3)<2.2||Math.hypot(x,z-2)<3||Math.hypot(x-TX,z-TZ)<7.2) continue;
       if(avoid.some(o=>Math.hypot(o.x-x,o.z-z)<o.r+.6)) continue;
-      const s2=.2+R()*.22; tiny.push({x,y:groundH(x,z)-.04,z,sx:s2,sy:s2*(.85+R()*.35),sz:s2,ry:R()*6,c:choice(R,TINT)}); avoid.push({x,z,r:.22});
+      const s2=.2+R()*.22; tiny.push({x,y:groundH(x,z)-.04,z,sx:s2,sy:s2*(.85+R()*.35),sz:s2,ry:R()*6,c:choice(R,['#ffffff','#f2f6ea','#e8efe0','#fff8ee'])}); avoid.push({x,z,r:.22});
     }
   }
-  g.add(instances(pineGeo(),VC(),tiny));
+  /* 모양이 다른 소나무 다섯 가지를 섞어 심는다 */
+  const PV=[11,23,37,52,68].map(sd=>koreanPineGeo(sd));
+  PV.forEach((pg,k)=>{ const its=tiny.filter((_,i)=>i%PV.length===k); if(its.length) g.add(instances(pg,VC(),its)); });
   /* 솟는 안개와 매 */
   const wisps=points(70,0,'#ffffff',2.4,null,()=>{ const a=R()*TAU, r=SR+3+R()*30; return [Math.cos(a)*r,-85+R()*65,Math.sin(a)*r]; });
   wisps.material.opacity=.3; wisps.material.fog=false; g.add(wisps);
