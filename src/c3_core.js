@@ -17,7 +17,13 @@ const REALMS=[
   {id:'mountain',name:'산',short:'정상의 바람',line:'정상의 바람과 먼 종소리',color:'#8fa0b4'},
   {id:'cave',name:'동굴',short:'물방울',line:'물방울과 울림',color:'#b88a52'},
   {id:'rain',name:'원두막',short:'빗소리',line:'처마에 듣는 빗소리',color:'#6f8f8a'},
-  {id:'field',name:'들녘',short:'바람과 풀숲',line:'풀잎이 사그락이는 바람',color:'#a9a05a'}
+  {id:'field',name:'들녘',short:'바람과 풀숲',line:'풀잎이 사그락이는 바람',color:'#a9a05a'},
+  /* 검은 방: 하얀 방 맞은편 반원. 쌓인 마음을 몸으로 터뜨리는 곳(아직 짓는 중) */
+  {id:'thunder',name:'우레',short:'마음껏 소리치기',line:'대나무숲에 소리치기',color:'#d4b04a',dark:true,soon:true},
+  {id:'spout',name:'용오름',short:'허공에 발차기',line:'이불 위 하이킥',color:'#6f8fe0',dark:true,soon:true},
+  {id:'hail',name:'우박',short:'두드리고 때리기',line:'베개 두드리기',color:'#b9c8d8',dark:true,soon:true},
+  {id:'downpour',name:'장대비',short:'실컷 울기',line:'창가에서 실컷 울기',color:'#5f86a8',dark:true,soon:true},
+  {id:'gale',name:'질풍',short:'미친 듯이 달리기',line:'트랙을 미친 듯이 달리기',color:'#e0673f',dark:true,soon:true}
 ];
 
 /* ---- 렌더러 ---- */
@@ -217,11 +223,13 @@ function buildFigure(){
   };
 }
 
-/* ---- 하얀 방과 여덟 개의 문 ---- */
+/* ---- 하얀 방(여덟 문)과 맞은편 검은 방(다섯 문) ---- */
 /* 문은 서 있는 자리(0,2)를 반원으로 감싼다. 각 문은 가운데를 바라보고, 다가서는 자리(ax,az)는 문 앞 2.4 */
 const HUB_C={x:0,z:2}, HUB_R=8.5;
+const WHITE_N=REALMS.filter(r=>!r.dark).length, BLACK_N=REALMS.length-WHITE_N;
 const DOORS=REALMS.map((r,i)=>{
-  const th=(i-(REALMS.length-1)/2)*Math.min(.52,3.12/(REALMS.length-1)), sn=Math.sin(th), cs=Math.cos(th);
+  /* 하얀 문은 앞쪽 반원, 검은 문은 뒤쪽 반원 */
+  const th=r.dark?Math.PI+(i-WHITE_N-(BLACK_N-1)/2)*.6:(i-(WHITE_N-1)/2)*Math.min(.52,3.12/(WHITE_N-1)), sn=Math.sin(th), cs=Math.cos(th);
   const x=HUB_C.x+sn*HUB_R, z=HUB_C.z-cs*HUB_R;
   return {realm:r,x,z,ry:-th,w:2.2,h:4.5,ax:x-sn*2.4,az:z+cs*2.4};
 });
@@ -300,6 +308,41 @@ const DOOR_PAINT={
     g.strokeStyle='rgba(235,226,196,.95)'; g.lineWidth=1.3;
     [[200,330,70],[228,350,64],[176,350,56],[40,340,58]].forEach(([x,y,L])=>{ g.beginPath(); g.moveTo(x,y+L); g.quadraticCurveTo(x+4,y,x-12,y+8); g.stroke(); g.lineWidth=3; g.beginPath(); g.moveTo(x-10,y+6); g.lineTo(x-14,y+18); g.stroke(); g.lineWidth=1.3; });
   },
+  thunder(g,w,h,R){
+    g.fillStyle='#0f1114'; g.fillRect(0,0,w,h);
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#2a2a38'); gr.addColorStop(1,'#101214'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.fillStyle='rgba(255,236,160,.18)'; g.beginPath(); g.arc(150,90,90,0,TAU); g.fill();
+    g.strokeStyle='#ffe58a'; g.lineWidth=5; g.lineJoin='miter'; g.beginPath(); g.moveTo(150,20); g.lineTo(122,120); g.lineTo(150,118); g.lineTo(112,230); g.stroke();
+    g.strokeStyle='rgba(255,229,138,.5)'; g.lineWidth=2; g.beginPath(); g.moveTo(132,82); g.lineTo(96,128); g.stroke();
+    const Rr=rng(3); for(let i=0;i<16;i++){ const x=8+i*16+Rr()*6, lean=(Rr()-.5)*30; g.strokeStyle=i%2?'#3f6a3a':'#4f7f45'; g.lineWidth=6+Rr()*3; g.beginPath(); g.moveTo(x,h); g.quadraticCurveTo(x+lean*.3,260,x+lean,120+Rr()*80); g.stroke();
+      g.strokeStyle='rgba(20,30,20,.6)'; g.lineWidth=1.5; for(let k=0;k<5;k++){ const y=h-40-k*50; g.beginPath(); g.moveTo(x-4,y); g.lineTo(x+4,y); g.stroke(); } }
+  },
+  spout(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#1a1d2c'); gr.addColorStop(1,'#0c0d12'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.strokeStyle='rgba(140,165,240,.75)'; for(let i=0;i<14;i++){ const y=40+i*24, rx=18+i*7; g.lineWidth=3; g.beginPath(); g.ellipse(128+Math.sin(i*.7)*14,y,rx,7,0,0,TAU); g.stroke(); }
+    g.fillStyle='#e9e4ff'; g.beginPath(); g.ellipse(128,330,96,22,0,0,TAU); g.fill();
+    g.fillStyle='#3a3550'; g.save(); g.translate(150,300); g.rotate(-.5); g.fillRect(-6,-60,12,60); g.restore();
+    g.fillStyle='#f2e6d0'; g.beginPath(); g.ellipse(178,250,12,7,-.5,0,TAU); g.fill();
+  },
+  hail(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#1c2128'); gr.addColorStop(1,'#0d0f12'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    const Rr=rng(5); g.fillStyle='rgba(220,232,245,.9)'; for(let i=0;i<60;i++){ g.beginPath(); g.arc(Rr()*w,Rr()*300,1.5+Rr()*3,0,TAU); g.fill(); }
+    [[80,300,70,40,'#e8e4dc'],[170,316,74,42,'#d9d4ca'],[124,268,66,36,'#f4f0e8']].forEach(([x,y,rx,ry,c])=>{ g.fillStyle=c; g.beginPath(); g.ellipse(x,y,rx,ry,0,0,TAU); g.fill(); g.strokeStyle='rgba(0,0,0,.15)'; g.lineWidth=2; g.beginPath(); g.ellipse(x,y,rx*.6,ry*.4,0,0,TAU); g.stroke(); });
+    g.fillStyle='rgba(255,255,255,.85)'; for(let i=0;i<10;i++){ const x=40+Rr()*180, y=180+Rr()*80; g.beginPath(); g.ellipse(x,y,7,2.5,Rr()*3,0,TAU); g.fill(); }
+  },
+  downpour(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#1d2733'); gr.addColorStop(1,'#0e1318'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.fillStyle='#2c3a48'; g.fillRect(40,40,176,250); g.strokeStyle='#5b6b78'; g.lineWidth=6; g.strokeRect(40,40,176,250); g.beginPath(); g.moveTo(128,40); g.lineTo(128,290); g.moveTo(40,165); g.lineTo(216,165); g.stroke();
+    const Rr=rng(9); g.strokeStyle='rgba(170,200,230,.55)'; g.lineWidth=1.4; for(let i=0;i<90;i++){ const x=44+Rr()*168, y=44+Rr()*240; g.beginPath(); g.moveTo(x,y); g.lineTo(x-3,y+18); g.stroke(); }
+    g.fillStyle='rgba(190,215,240,.7)'; for(let i=0;i<14;i++){ const x=48+Rr()*160, y=60+Rr()*220; g.beginPath(); g.ellipse(x,y,2.5,4,0,0,TAU); g.fill(); }
+    g.fillStyle='#e9e0d0'; g.beginPath(); g.ellipse(128,350,46,30,0,0,TAU); g.fill(); g.fillStyle='#2b2420'; g.beginPath(); g.arc(128,318,20,0,TAU); g.fill();
+  },
+  gale(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#2a1610'); gr.addColorStop(1,'#110a08'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.strokeStyle='#c4573a'; g.lineWidth=26; g.beginPath(); g.ellipse(128,250,104,150,0,0,TAU); g.stroke();
+    g.strokeStyle='rgba(255,255,255,.75)'; g.lineWidth=2; g.setLineDash([10,8]); g.beginPath(); g.ellipse(128,250,104,150,0,0,TAU); g.stroke(); g.setLineDash([]);
+    g.strokeStyle='rgba(255,170,120,.6)'; g.lineWidth=3; for(let i=0;i<7;i++){ const y=90+i*36; g.beginPath(); g.moveTo(20+i*6,y); g.lineTo(110+i*10,y-6); g.stroke(); }
+  },
   rain(g,w,h,R){
     let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#9fb3b0'); gr.addColorStop(1,'#d5e1dc'); g.fillStyle=gr; g.fillRect(0,0,w,h);
     g.fillStyle='rgba(120,150,140,.5)'; g.beginPath(); g.moveTo(0,250); g.quadraticCurveTo(70,190,130,240); g.quadraticCurveTo(190,200,w,250); g.lineTo(w,330); g.lineTo(0,330); g.fill();
@@ -317,12 +360,12 @@ function doorTexture(realm){
   return canvasTex(256,512,(g,w,h)=>{
     (DOOR_PAINT[realm.id]||((g,w,h)=>{ g.fillStyle='#fff'; g.fillRect(0,0,w,h); }))(g,w,h,realm);
     /* 이름 띠 */
-    g.fillStyle='rgba(253,251,245,.92)'; g.beginPath(); g.roundRect?g.roundRect(34,392,188,92,14):g.rect(34,392,188,92); g.fill();
+    g.fillStyle=realm.dark?'rgba(18,18,22,.9)':'rgba(253,251,245,.92)'; g.beginPath(); g.roundRect?g.roundRect(34,392,188,92,14):g.rect(34,392,188,92); g.fill();
     g.strokeStyle=realm.color; g.globalAlpha=.7; g.lineWidth=2; g.beginPath(); g.moveTo(54,470); g.lineTo(202,470); g.stroke(); g.globalAlpha=1;
     g.textAlign='center'; g.textBaseline='middle';
-    g.fillStyle='#34332e'; g.font='700 52px "Gowun Batang","Apple SD Gothic Neo","Malgun Gothic",serif';
+    g.fillStyle=realm.dark?'#f2efe6':'#34332e'; g.font='700 52px "Gowun Batang","Apple SD Gothic Neo","Malgun Gothic",serif';
     g.fillText(realm.name,w/2,424);
-    g.fillStyle='#8a887f'; g.font='22px "Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+    g.fillStyle=realm.dark?'#a9a59a':'#8a887f'; g.font='22px "Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
     g.fillText(realm.short,w/2,456);
   });
 }
@@ -347,6 +390,12 @@ function buildHub(){
   g.add(new THREE.HemisphereLight(0xffffff,0xe9e7e0,.95));
   const dl=new THREE.DirectionalLight(0xffffff,.55); dl.position.set(4,10,6); g.add(dl);
   const floor=groundPlane(70,0,48,0,'#f4f3ef',null,true); g.add(floor);
+  /* 맞은편 반원은 검은 방: 검은 바닥과 둥글게 두른 검은 벽 */
+  const bf=new THREE.CircleGeometry(40,64,Math.PI,Math.PI); bf.rotateX(-Math.PI/2);
+  const blackFloor=mesh(bf,M('#17171a',{shininess:30,specular:0x333338}),HUB_C.x,.006,HUB_C.z); g.add(blackFloor);
+  const bw=new THREE.CylinderGeometry(11.5,11.5,14,64,1,true,-Math.PI/2,Math.PI);
+  const blackWall=mesh(bw,new THREE.MeshBasicMaterial({color:0x0e0e10,side:THREE.BackSide,fog:false}),HUB_C.x,7,HUB_C.z); g.add(blackWall);
+  const seam=mesh(new THREE.PlaneGeometry(23,.04),B('#8f8c84'),HUB_C.x,.014,HUB_C.z); seam.rotation.x=-Math.PI/2; g.add(seam);
   const ringTex=canvasTex(1024,1024,(c,w,h)=>{
     const cx=w/2, cy=h/2, U=64; c.lineCap='round';
     [1.6,3.4,5.4,7.4].forEach((r,i)=>{ c.strokeStyle='rgba(150,146,130,'+(.22-i*.03)+')'; c.lineWidth=i===3?3:2; c.beginPath(); c.arc(cx,cy,r*U,0,TAU); c.stroke(); });
@@ -366,7 +415,7 @@ function buildHub(){
     const dg=new THREE.Group(); dg.position.set(d.x,0,d.z); dg.rotation.y=d.ry;
     const outer=archShape(d.w+.3,d.h+.15,0), inner=archShape(d.w,d.h,0);
     outer.holes.push(new THREE.Path(inner.getPoints(24).reverse()));
-    const frameMat=M('#'+new THREE.Color(d.realm.color).lerp(new THREE.Color('#ffffff'),.72).getHexString(),{shininess:12});
+    const frameMat=M('#'+new THREE.Color(d.realm.color).lerp(new THREE.Color(d.realm.dark?'#141416':'#ffffff'),.72).getHexString(),{shininess:12});
     const frame=new THREE.Mesh(new THREE.ExtrudeGeometry(outer,{depth:.22,bevelEnabled:false,curveSegments:16}),frameMat);
     frame.position.z=-.11; dg.add(frame);
     const portal=new THREE.Mesh(archGeo(inner,d.w,d.h),new THREE.MeshBasicMaterial({map:doorTexture(d.realm),fog:false}));

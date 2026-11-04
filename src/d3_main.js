@@ -171,6 +171,13 @@ function leaveRealm(){
     syncHud();
   });
 }
+/* 아직 짓는 중인 검은 방 문: 들어가지 않고 안내만 한다 */
+let soonT=0;
+function soonNote(r){
+  const h=el.hubHint, keep=h.dataset.base||(h.dataset.base=h.textContent);
+  h.textContent=r.name+' 방은 지금 짓고 있어요. 곧 열려요.'; h.hidden=false;
+  clearTimeout(soonT); soonT=setTimeout(()=>{ h.textContent=keep; },2600);
+}
 function goDoor(i){
   if(S.busy||S.mode!=='hub') return;
   const d=DOORS[i], m=S.me;
@@ -284,7 +291,7 @@ el.vol.addEventListener('input',()=>{
 });
 REALMS.forEach((r,i)=>{
   const b=document.createElement('button');
-  b.type='button'; b.className='pill'; b.textContent=r.name+' 문으로 들어가기';
+  b.type='button'; b.className='pill'; b.textContent=r.name+(r.soon?' 문(준비 중)':' 문으로 들어가기');
   b.addEventListener('click',()=>goDoor(i));
   el.nav.appendChild(b);
 });
@@ -367,7 +374,7 @@ function update(dt){
   const P=footPose(m.x,m.z);
   m.swim=damp(m.swim||0,P.k,6,dt); m.lieK=damp(m.lieK||0,m.lie?1:0,4,dt);
   if(P.dep>.05&&m.sitting&&P.dep>.7) setSit(false);
-  if(S.mode==='hub'&&m.pending&&!m.walking&&!S.busy){ const r=m.pending; m.pending=null; enterRealm(r); }
+  if(S.mode==='hub'&&m.pending&&!m.walking&&!S.busy){ const r=m.pending; m.pending=null; if(r.soon) soonNote(r); else enterRealm(r); }
 
   if(S.mode==='scene'){
     if(m.sitting){
