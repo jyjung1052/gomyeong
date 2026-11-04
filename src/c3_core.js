@@ -20,10 +20,13 @@ const REALMS=[
   {id:'field',name:'들녘',short:'바람과 풀숲',line:'풀잎이 사그락이는 바람',color:'#a9a05a'},
   /* 검은 방: 하얀 방 맞은편 반원. 쌓인 마음을 몸으로 터뜨리는 곳(아직 짓는 중) */
   {id:'thunder',name:'우레',short:'마음껏 소리치기',line:'대나무숲에 소리치기',color:'#d4b04a',dark:true,soon:true},
+  {id:'bolt',name:'벼락',short:'와장창 깨기',line:'접시와 유리병 깨기',color:'#f0e070',dark:true,soon:true},
   {id:'spout',name:'용오름',short:'허공에 발차기',line:'이불 위 하이킥',color:'#6f8fe0',dark:true,soon:true},
   {id:'hail',name:'우박',short:'두드리고 때리기',line:'베개 두드리기',color:'#b9c8d8',dark:true,soon:true},
-  {id:'downpour',name:'장대비',short:'실컷 울기',line:'창가에서 실컷 울기',color:'#5f86a8',dark:true,soon:true},
-  {id:'gale',name:'질풍',short:'미친 듯이 달리기',line:'트랙을 미친 듯이 달리기',color:'#e0673f',dark:true,soon:true}
+  {id:'quake',name:'지진',short:'쿵쿵 발 구르기',line:'발 굴러 땅 흔들기',color:'#b0824e',dark:true,soon:true},
+  {id:'avalanche',name:'눈사태',short:'와르르 무너뜨리기',line:'쌓인 것 무너뜨리기',color:'#dce6f0',dark:true,soon:true},
+  {id:'gale',name:'질풍',short:'미친 듯이 달리기',line:'트랙을 미친 듯이 달리기',color:'#e0673f',dark:true,soon:true},
+  {id:'downpour',name:'장대비',short:'실컷 울기',line:'창가에서 실컷 울기',color:'#5f86a8',dark:true,soon:true}
 ];
 
 /* ---- 렌더러 ---- */
@@ -223,13 +226,13 @@ function buildFigure(){
   };
 }
 
-/* ---- 하얀 방(여덟 문)과 맞은편 검은 방(다섯 문) ---- */
+/* ---- 하얀 방(여덟 문)과 맞은편 검은 방(여덟 문) ---- */
 /* 문은 서 있는 자리(0,2)를 반원으로 감싼다. 각 문은 가운데를 바라보고, 다가서는 자리(ax,az)는 문 앞 2.4 */
 const HUB_C={x:0,z:2}, HUB_R=8.5;
 const WHITE_N=REALMS.filter(r=>!r.dark).length, BLACK_N=REALMS.length-WHITE_N;
 const DOORS=REALMS.map((r,i)=>{
   /* 하얀 문은 앞쪽 반원, 검은 문은 뒤쪽 반원 */
-  const th=r.dark?Math.PI+(i-WHITE_N-(BLACK_N-1)/2)*.6:(i-(WHITE_N-1)/2)*Math.min(.52,3.12/(WHITE_N-1)), sn=Math.sin(th), cs=Math.cos(th);
+  const th=r.dark?Math.PI+(i-WHITE_N-(BLACK_N-1)/2)*Math.min(.6,3.12/(BLACK_N-1)):(i-(WHITE_N-1)/2)*Math.min(.52,3.12/(WHITE_N-1)), sn=Math.sin(th), cs=Math.cos(th);
   const x=HUB_C.x+sn*HUB_R, z=HUB_C.z-cs*HUB_R;
   return {realm:r,x,z,ry:-th,w:2.2,h:4.5,ax:x-sn*2.4,az:z+cs*2.4};
 });
@@ -342,6 +345,26 @@ const DOOR_PAINT={
     g.strokeStyle='#c4573a'; g.lineWidth=26; g.beginPath(); g.ellipse(128,250,104,150,0,0,TAU); g.stroke();
     g.strokeStyle='rgba(255,255,255,.75)'; g.lineWidth=2; g.setLineDash([10,8]); g.beginPath(); g.ellipse(128,250,104,150,0,0,TAU); g.stroke(); g.setLineDash([]);
     g.strokeStyle='rgba(255,170,120,.6)'; g.lineWidth=3; for(let i=0;i<7;i++){ const y=90+i*36; g.beginPath(); g.moveTo(20+i*6,y); g.lineTo(110+i*10,y-6); g.stroke(); }
+  },
+  bolt(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#24222e'); gr.addColorStop(1,'#0e0e12'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.strokeStyle='#fff3a0'; g.lineWidth=6; g.beginPath(); g.moveTo(90,10); g.lineTo(140,110); g.lineTo(112,116); g.lineTo(170,230); g.stroke();
+    g.fillStyle='rgba(255,243,160,.15)'; g.beginPath(); g.arc(140,240,80,0,TAU); g.fill();
+    const Rr=rng(12); for(let i=0;i<22;i++){ const x=128+(Rr()-.5)*200, y=250+Rr()*110, s=4+Rr()*12; g.fillStyle=i%3?'rgba(230,240,250,.85)':'rgba(170,215,200,.8)'; g.beginPath(); g.moveTo(x,y-s); g.lineTo(x+s*.8,y+s*.3); g.lineTo(x-s*.6,y+s*.6); g.closePath(); g.fill(); }
+    g.fillStyle='#e9e4da'; g.beginPath(); g.ellipse(128,340,40,10,0,0,TAU); g.fill();
+  },
+  quake(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#2a2018'); gr.addColorStop(1,'#120d09'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.fillStyle='#5a4330'; g.fillRect(0,250,w,h-250);
+    g.strokeStyle='#0c0806'; g.lineWidth=5; g.beginPath(); g.moveTo(128,250); g.lineTo(110,300); g.lineTo(140,340); g.lineTo(118,400); g.moveTo(110,300); g.lineTo(60,330); g.moveTo(140,340); g.lineTo(200,360); g.stroke();
+    g.strokeStyle='rgba(240,190,120,.55)'; g.lineWidth=3; for(let i=0;i<3;i++){ g.beginPath(); g.ellipse(128,250,40+i*30,8+i*5,0,0,TAU); g.stroke(); }
+    g.fillStyle='#8a6a4a'; [[60,236,18],[200,232,22],[150,226,12]].forEach(([x,y,r])=>{ g.beginPath(); g.arc(x,y,r,Math.PI,0); g.fill(); });
+  },
+  avalanche(g,w,h,R){
+    let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#1d2430'); gr.addColorStop(1,'#0d1016'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.fillStyle='#e6edf4'; g.beginPath(); g.moveTo(0,330); g.lineTo(70,150); g.lineTo(150,250); g.lineTo(210,120); g.lineTo(w,200); g.lineTo(w,h); g.lineTo(0,h); g.fill();
+    g.fillStyle='rgba(240,246,252,.75)'; const Rr=rng(14); for(let i=0;i<26;i++){ g.beginPath(); g.arc(120+Rr()*130,200+Rr()*170,8+Rr()*20,0,TAU); g.fill(); }
+    ['#c9b28c','#b89c74','#d6c39f'].forEach((c,i)=>{ g.save(); g.translate(60+i*26,330-i*4); g.rotate(-.4+i*.35); g.fillStyle=c; g.fillRect(-18,-9,36,18); g.restore(); });
   },
   rain(g,w,h,R){
     let gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#9fb3b0'); gr.addColorStop(1,'#d5e1dc'); g.fillStyle=gr; g.fillRect(0,0,w,h);
