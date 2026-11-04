@@ -371,6 +371,10 @@ function update(dt){
     if(m.sitting) m.heading+=angDiff(m.heading,Math.atan2(fx,fz)+(m.lie?Math.PI:0))*(1-Math.exp(-1.6*dt));
   }
   clampMe();
+  /* 데크에 발을 들이면 걸어가던 것을 멈춘다(키로 움직일 때는 그대로) */
+  const onDeck=!!(world.yellSpot&&world.yellSpot(m.x,m.z));
+  if(onDeck&&!m.onDeck&&!(kf||kr)){ m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false; }
+  m.onDeck=onDeck;
   const P=footPose(m.x,m.z);
   m.swim=damp(m.swim||0,P.k,6,dt); m.lieK=damp(m.lieK||0,m.lie?1:0,4,dt);
   if(P.dep>.05&&m.sitting&&P.dep>.7) setSit(false);

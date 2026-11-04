@@ -92,7 +92,11 @@ body{
 .yellbox .yq{margin:0;color:#fffbe8;font-family:var(--display);font-weight:700;font-size:22px}
 .yellbox .ych{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .yellbox .ych[hidden],.yellbox .yme[hidden],.yellbox .ygo[hidden]{display:none}
-.yellbox .ychip{font-size:14px;min-height:38px;padding:6px 12px}
+.yellbox .pill.ychip{font-size:16px;min-height:48px;padding:8px 16px;border-radius:999px;border:none;background:linear-gradient(#fffdf4,#efe6cc);color:#3a2a14;box-shadow:0 5px 0 #b9a77c,0 8px 14px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.9);transition:transform .08s,box-shadow .08s}
+.yellbox .pill.ychip:active{transform:translateY(4px);box-shadow:0 1px 0 #b9a77c,0 3px 6px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.9)}
+.yellbox .pill.ygo{min-width:min(340px,80vw);min-height:72px;font-size:26px;font-weight:700;padding:14px 44px;border:none;border-radius:999px;color:#2a1d0c;background:linear-gradient(#fff1bd,#f5be52 52%,#e0952e);box-shadow:0 9px 0 #8f5614,0 16px 26px rgba(0,0,0,.4),inset 0 3px 0 rgba(255,255,255,.75),inset 0 -4px 0 rgba(120,60,0,.25);text-shadow:0 1px 0 rgba(255,255,255,.5);transition:transform .08s,box-shadow .08s}
+.yellbox .pill.ygo:active{transform:translateY(7px);box-shadow:0 2px 0 #8f5614,0 6px 12px rgba(0,0,0,.35),inset 0 3px 0 rgba(255,255,255,.75)}
+.yellbox .pill.ychip:hover,.yellbox .pill.ygo:hover{filter:brightness(1.04)}
 .yellbox .yme{display:flex;gap:6px;width:100%;justify-content:center}
 .yellbox .yme input{flex:1;max-width:260px;min-height:40px;border-radius:999px;border:1px solid var(--pill-edge);padding:0 14px;font:inherit;font-size:16px;background:rgba(255,255,255,.9)}
 .hubhint{margin:0;font-size:13px;color:#6f6d65;text-align:center;background:rgba(255,255,255,.75);padding:4px 14px;border-radius:999px}

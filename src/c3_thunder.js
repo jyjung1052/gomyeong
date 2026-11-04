@@ -1,10 +1,23 @@
 /* ---- 우레: 끝이 보이지 않는 대나무숲. 안쪽 깊이 작은 연못과 그 둘레의 둥근 데크에서 마음껏 소리친다 ---- */
 const TH_POND=2.2, TH_DECK=4.4, TH_DECKY=.32, TH_R=52, TH_PATHZ=TH_R-4;   // 1인용이라 연못과 데크를 작게
+/* 연못 10개: 가운데 하나 + 바깥으로 흩어진 아홉 개. 길(스폰→가운데)과 겹치지 않게 방향을 골랐다 */
+const TH_PONDS=[{x:0,z:0}];
+for(let i=0;i<9;i++){ const a=(140+i*32.5)*Math.PI/180, r=i%2?32:20; TH_PONDS.push({x:Math.cos(a)*r,z:Math.sin(a)*r}); }
+const TH_SPOKES=TH_PONDS.slice(1).map(p=>[0,0,p.x,p.z]);            // 가운데 연못에서 각 연못으로 가는 샛길
+function pondDist(x,z){ let d=1e9; for(const p of TH_PONDS) d=Math.min(d,Math.hypot(x-p.x,z-p.z)); return d; }
 function thunderH(x,z){
-  const r=Math.hypot(x,z);
+  const r=pondDist(x,z);
   if(r<TH_POND) return -.6;                                        // 연못 바닥
   if(r<TH_DECK+.05) return TH_DECKY;                               // 데크 위
   return .15*nz(x*.08,0,z*.08)+.06*nz(x*.3,2,z*.3);
+}
+/* 샛길 위인가(스폰 길과 가운데→연못 샛길을 1.9m 폭으로 비워 둔다) */
+function onLane(x,z){
+  if(z>0&&z<TH_PATHZ+6&&Math.abs(x-.5*Math.sin(z*.2))<1.9) return true;
+  return TH_SPOKES.some(([x0,z0,x1,z1])=>{
+    const dx=x1-x0, dz=z1-z0, t=clamp(((x-x0)*dx+(z-z0)*dz)/(dx*dx+dz*dz),0,1);
+    return Math.hypot(x0+dx*t-x,z0+dz*t-z)<1.9;
+  });
 }
 /* 대나무 한 그루: 마디가 있는 곧은 줄기, 위쪽에 가는 가지와 길쭉한 잎 다발 */
 function bambooGeo(seed){
@@ -69,54 +82,54 @@ function buildThunder(){
   T.setAttribute('color',new THREE.BufferAttribute(tc,3)); T.computeVertexNormals();
   g.add(new THREE.Mesh(T,VC({shininess:3})));
 
-  /* 연못: 짙은 초록 물, 둘레에 이끼 낀 돌 */
-  const water=mesh(new THREE.CircleGeometry(TH_POND+.1,48),M('#2c4a3c',{shininess:90,specular:0x99aa99,transparent:true,opacity:.92}),0,-.02,0);
-  water.rotation.x=-Math.PI/2; g.add(water);
-  const stones=[]; for(let i=0;i<26;i++){ const a=i/26*TAU+R()*.1, r=TH_POND-.05, s=.25+R()*.25; stones.push({x:Math.cos(a)*r,y:-.02,z:Math.sin(a)*r,sx:s*1.3,sy:s*.6,sz:s,ry:R()*6,c:choice(R,['#6d7360','#5d6452','#7a7d68'])}); }
-  const keep=m=>{ m.userData.noCut=true; return m; };
-  g.add(instances(rockGeo(),keep(VC({vertexColors:false})),stones));
-  const pads=[]; for(let i=0;i<7;i++){ const a=R()*TAU, r=.5+R()*(TH_POND-.8); pads.push({x:Math.cos(a)*r,y:.0,z:Math.sin(a)*r,sx:.3+R()*.25,sy:1,sz:.3+R()*.25,ry:R()*3,c:choice(R,['#3f6a48','#4a7a50'])}); }
-  const padG=new THREE.CircleGeometry(1,16); padG.rotateX(-Math.PI/2); g.add(instances(padG,keep(M('#ffffff',{shininess:6})),pads));
-
-  /* 연못을 빙 두른 둥근 나무 데크와, 연못 쪽 가장자리를 따라 선 난간(들어오는 길 쪽은 열려 있다) */
-  const RAIL=TH_POND+.14;
-  const planks=[], NP=72;
-  for(let i=0;i<NP;i++){
-    const a=i/NP*TAU, rm=(TH_POND+TH_DECK)/2;
-    planks.push({x:Math.cos(a)*rm,y:TH_DECKY-.04,z:Math.sin(a)*rm,sx:1,sy:1,sz:1,ry:-a,c:choice(R,['#a07a52','#946f49','#ab845a','#8d6844'])});
-  }
-  const plankG=new THREE.BoxGeometry(TH_DECK-TH_POND,.08,(TH_DECK+TH_POND)/2*TAU/NP*.93);
-  g.add(instances(plankG,keep(VC({vertexColors:false,shininess:8})),planks));
-  const under=mesh(new THREE.CylinderGeometry(TH_DECK,TH_DECK,TH_DECKY,64,1,true),M('#5b4430',{side:THREE.DoubleSide}),0,TH_DECKY/2-.04,0); g.add(under);
-  const posts=[], railM=keep(M('#7a5a3c',{shininess:8}));
-  for(let i=0;i<28;i++){
-    const a=i/28*TAU; if(Math.abs(angDiff(a,Math.PI/2))<.32) continue;   // 길 쪽(+z) 입구
-    posts.push({x:Math.cos(a)*RAIL,y:TH_DECKY+.45,z:Math.sin(a)*RAIL});
-  }
-  g.add(instances(new THREE.CylinderGeometry(.05,.06,.9,8),railM,posts));
-  const rail=new THREE.Mesh(new THREE.TorusGeometry(RAIL,.035,6,96,TAU-.64),railM); rail.rotation.x=-Math.PI/2; rail.rotation.z=-Math.PI/2+.32; rail.position.y=TH_DECKY+.88; g.add(rail);
+  /* 연못 열 개: 각각 물·돌·연잎·둥근 데크, 그리고 연못 쪽을 빙 두른 난간(막혀 있어 빠지지 않는다) */
+  const RAIL=TH_POND+.14, keep=m=>{ m.userData.noCut=true; return m; };
+  const rockG=rockGeo(), padG=new THREE.CircleGeometry(1,16); padG.rotateX(-Math.PI/2);
+  const plankG=new THREE.BoxGeometry(TH_DECK-TH_POND,.08,(TH_DECK+TH_POND)/2*TAU/72*.93);
+  const rockM=keep(VC({vertexColors:false})), padM=keep(M('#ffffff',{shininess:6})), deckM=keep(VC({vertexColors:false,shininess:8}));
+  const railM=keep(M('#7a5a3c',{shininess:8})), underM=M('#5b4430',{side:THREE.DoubleSide});
+  const waterM=M('#2c4a3c',{shininess:90,specular:0x99aa99,transparent:true,opacity:.92});
+  const postG=new THREE.CylinderGeometry(.05,.06,.9,8), underG=new THREE.CylinderGeometry(TH_DECK,TH_DECK,TH_DECKY,64,1,true);
+  TH_PONDS.forEach(P=>{
+    const pg=new THREE.Group(); pg.position.set(P.x,0,P.z); g.add(pg);
+    const water=mesh(new THREE.CircleGeometry(TH_POND+.1,48),waterM,0,-.02,0); water.rotation.x=-Math.PI/2; pg.add(water);
+    const stones=[]; for(let i=0;i<26;i++){ const a=i/26*TAU+R()*.1, r=TH_POND-.05, s=.25+R()*.25; stones.push({x:Math.cos(a)*r,y:-.02,z:Math.sin(a)*r,sx:s*1.3,sy:s*.6,sz:s,ry:R()*6,c:choice(R,['#6d7360','#5d6452','#7a7d68'])}); }
+    pg.add(instances(rockG,rockM,stones));
+    const pads=[]; for(let i=0;i<7;i++){ const a=R()*TAU, r=.5+R()*(TH_POND-.8); pads.push({x:Math.cos(a)*r,y:0,z:Math.sin(a)*r,sx:.3+R()*.25,sy:1,sz:.3+R()*.25,ry:R()*3,c:choice(R,['#3f6a48','#4a7a50'])}); }
+    pg.add(instances(padG,padM,pads));
+    /* 데크: 연못을 빙 둘러싸고, 난간은 연못 쪽 가장자리를 끊김 없이 한 바퀴 */
+    const planks=[]; for(let i=0;i<72;i++){ const a=i/72*TAU, rm=(TH_POND+TH_DECK)/2; planks.push({x:Math.cos(a)*rm,y:TH_DECKY-.04,z:Math.sin(a)*rm,sx:1,sy:1,sz:1,ry:-a,c:choice(R,['#a07a52','#946f49','#ab845a','#8d6844'])}); }
+    pg.add(instances(plankG,deckM,planks));
+    pg.add(mesh(underG,underM,0,TH_DECKY/2-.04,0));
+    const posts=[]; for(let i=0;i<28;i++){ const a=i/28*TAU; posts.push({x:Math.cos(a)*RAIL,y:TH_DECKY+.45,z:Math.sin(a)*RAIL}); }
+    pg.add(instances(postG,railM,posts));
+    const rail=new THREE.Mesh(new THREE.TorusGeometry(RAIL,.035,6,96),railM); rail.rotation.x=-Math.PI/2; rail.position.y=TH_DECKY+.88; pg.add(rail);
+  });
   /* 데크로 이어지는 징검돌 길 */
   const steps=[]; for(let z=TH_DECK+.8;z<TH_PATHZ;z+=1.15+R()*.3){ const x=.5*Math.sin(z*.2)+(R()-.5)*.4, s=.45+R()*.15; steps.push({x,y:thunderH(x,z)+.02,z,sx:s*1.2,sy:.12,sz:s,ry:R()*3,c:choice(R,['#8a8778','#9a9686','#7b796c'])}); }
   g.add(instances(rockGeo(),keep(VC({vertexColors:false})),steps));
 
-  /* 대나무: 길과 연못 둘레만 비우고 사방으로 빽빽하게. 멀리는 안개 속으로 끝없이 */
-  const clear=(x,z)=>Math.hypot(x,z)<TH_DECK+1.6||(Math.abs(x-.5*Math.sin(z*.2))<1.9&&z>0&&z<TH_PATHZ+6);
-  const culms=[[],[],[],[]], avoid=[{x:0,z:0,r:TH_POND+.15}];
-  for(let n=0,tries=0;n<3600&&tries<40000;tries++){
+  /* 대나무: 길과 샛길, 연못 둘레만 비우고 사방으로 빽빽하게. 멀리는 안개 속으로 끝없이 */
+  const clear=(x,z)=>pondDist(x,z)<TH_DECK+1.6||onLane(x,z);
+  const culms=[[],[],[],[]], avoid=TH_PONDS.map(p=>({x:p.x,z:p.z,r:TH_POND+.15}));
+  for(let n=0,tries=0;n<1800&&tries<30000;tries++){
     const near=R()<.7, rr=near?Math.sqrt(R())*TH_R+2:TH_R+Math.pow(R(),.7)*55, a=R()*TAU, x=Math.cos(a)*rr, z=Math.sin(a)*rr;
     if(clear(x,z)) continue;
     n++; const s=.85+R()*.35;
     culms[n%4].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
     if(rr<TH_R+2) avoid.push({x,z,r:.16*s});
   }
-  /* 연못 둘레: 데크 바로 바깥에 대나무를 한 겹 더 빽빽이 두른다(들어오는 길만 비운다) */
-  for(let n=0;n<420;n++){
-    const a=R()*TAU, rr=TH_DECK+.6+Math.pow(R(),.8)*1.6, x=Math.cos(a)*rr, z=Math.sin(a)*rr;
-    if(z>0&&z<TH_PATHZ+6&&Math.abs(x-.5*Math.sin(z*.2))<1.9) continue;
-    const s=.85+R()*.35;
-    culms[n%4].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
-    avoid.push({x,z,r:.16*s});
-  }
+  /* 연못마다 둘레를 더 빽빽이: 데크 바로 바깥이 가장 촘촘하고, 멀어질수록 듬성해진다 */
+  const ringCulms=(P,rMin,rSpan,count)=>{
+    for(let n=0;n<count;n++){
+      const a=R()*TAU, rr=rMin+Math.pow(R(),.8)*rSpan, x=P.x+Math.cos(a)*rr, z=P.z+Math.sin(a)*rr;
+      if(onLane(x,z)) continue;
+      const s=.85+R()*.35;
+      culms[Math.floor(R()*4)].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
+      avoid.push({x,z,r:.16*s});
+    }
+  };
+  TH_PONDS.forEach(P=>{ ringCulms(P,TH_DECK+.6,1.6,150); ringCulms(P,TH_DECK+2.2,1.8,90); });
   const bamMat=new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:18,specular:0x223322});
   /* 바람에 대나무가 휘청인다: 높이의 제곱만큼 흔들리고, 소리칠 때(GUST)는 크게 출렁인다 */
   bamMat.onBeforeCompile=sh=>{
@@ -165,12 +178,13 @@ function buildThunder(){
   return {group:g,fog:{c:0xb3c2a6,n:6,f:58},bg:0xb3c2a6,bounds:{circle:[0,0,TH_R]},avoid,
     spawn:{x:0,z:TH_PATHZ},spawnJ:[2,3],groundH:thunderH,waterY:-1000,pitch:.24,pitchSit:.14,
     /* 데크 위(연못 둘레)에 서 있으면 소리칠 수 있다 */
-    yellSpot(x,z){ const r=Math.hypot(x,z); return r>RAIL+.16&&r<TH_DECK-.1; },
+    yellSpot(x,z){ return TH_PONDS.some(P=>{ const r=Math.hypot(x-P.x,z-P.z); return r>RAIL+.16&&r<TH_DECK-.1; }); },
     /* 소리치면 대숲이 크게 출렁이고 새들이 날아오른다 */
-    shout(power){
+    shout(power,x,z){
       gustT=4.5*(power||1);
+      const P=TH_PONDS.reduce((b,p)=>Math.hypot(p.x-(x||0),p.z-(z||0))<Math.hypot(b.x-(x||0),b.z-(z||0))?p:b);
       birds.forEach((b,i)=>{ const a=R()*TAU, r=6+R()*16; b.position.set(Math.cos(a)*r,6+R()*4,Math.sin(a)*r); b.userData.age=0; b.userData.a=a; b.visible=true; });
-      for(let k=0;k<3;k++) setTimeout(()=>{ const r=rings[ri++%rings.length]; r.position.set((R()-.5)*1.5,.0,(R()-.5)*1.5); r.userData.age=0; },k*350);
+      for(let k=0;k<3;k++) setTimeout(()=>{ const r=rings[ri++%rings.length]; r.position.set(P.x+(R()-.5)*1.5,.0,P.z+(R()-.5)*1.5); r.userData.age=0; },k*350);
     },
     update(t,dt,me){
       const s=spd();

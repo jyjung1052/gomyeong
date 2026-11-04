@@ -64,7 +64,7 @@ const Yell=(()=>{
     const m=S.me;
     if(active){
       const u=S.t-active.t0;
-      if(!active.fired&&u>=active.build){ active.fired=true; speak(active.text); burst(active.text); if(world.shout) world.shout(1); }
+      if(!active.fired&&u>=active.build){ active.fired=true; speak(active.text); burst(active.text); if(world.shout) world.shout(1,m.x,m.z); }
       if(u>active.build+active.dur+.4){ active=null; figure.yell(S.t,null,0); }
     }
     const show=!active&&S.mode==='scene'&&!S.busy&&world.yellSpot&&world.yellSpot(m.x,m.z)&&!m.walking;
