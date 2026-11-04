@@ -328,6 +328,35 @@ const Sound=(()=>{
       };
       tick();
     },
+    thunder(sc){
+      /* 대숲: 바람이 대나무 사이를 지나며 잎끼리 사사삭 스치고, 가끔 줄기끼리 '톡' 부딪힌다 */
+      const gust=mk.gain(.35); gust.connect(sc.bus);
+      const real=sc.bus; sc.bus=gust;
+      const bp=mk.filt('bandpass',520,.6);
+      mk.bed(sc,noiseB,[bp],.22); mk.lfo(sc,.04,160,bp.frequency);
+      const leaves=mk.bed(sc,noiseW,[mk.filt('bandpass',4200,.7),mk.filt('lowpass',9000)],.06);
+      mk.lfo(sc,.6,.02,leaves.gain);
+      mk.bed(sc,noiseW,[mk.filt('bandpass',1800,.6)],.03);
+      sc.bus=real;
+      let on=false;
+      const blow=()=>{
+        if(sc.dead) return;
+        const t0=ctx.currentTime, up=rnd(1.8,3);
+        gust.gain.setTargetAtTime(rnd(.7,.95),t0,up/3); on=true;
+        sc.timers.push(setTimeout(()=>{ if(sc.dead) return; gust.gain.setTargetAtTime(rnd(.28,.4),ctx.currentTime,rnd(1.4,2.4)); on=false; },(up+rnd(2,5))*1000));
+        sc.timers.push(setTimeout(blow,(up+rnd(7,14))*1000));
+      };
+      sc.timers.push(setTimeout(blow,2000));
+      const tick=()=>{
+        if(sc.dead) return;
+        const n=on?Math.floor(rnd(1,3)):(Math.random()<.3?1:0);
+        for(let i=0;i<n;i++) sc.timers.push(setTimeout(()=>hit(sc,3000,8000,1,rnd(.008,.022),rnd(.01,.03)),rnd(0,40)));
+        sc.timers.push(setTimeout(tick,rnd(30,70)));
+      };
+      tick();
+      /* 줄기끼리 부딪는 마른 '톡, 토독' */
+      mk.every(sc,3,9,()=>{ const k=Math.random()<.5?2:1; for(let i=0;i<k;i++) sc.timers.push(setTimeout(()=>hit(sc,700,1200,2.2,rnd(.03,.06),rnd(.03,.06)),i*rnd(90,160))); });
+    },
     cave(sc){
       [55,82.4,110.3].forEach((f,i)=>{
         const o=mk.osc(sc,'sine',f), g=mk.gain(.045);
@@ -382,8 +411,65 @@ const Sound=(()=>{
       tone(cur,rnd(520,780),rnd(300,400),.16,.12,'sine',.5,rnd(-.4,.4));
     }
   }
+  /* ---- 고함: 목소리를 흉내 낸 소리(톱니파 성대 + 모음 공명 + 거친 찢어짐 + 숨소리). 매번 다르게 ---- */
+  const VOW={eu:[340,1350,2500],a:[850,1250,2650],ya:[300,2100,2900],o:[520,900,2500],i:[300,2250,3000]};
+  function rasp(k){ const n=1024, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/n*2-1; c[i]=Math.tanh(x*k); } const w=ctx.createWaveShaper(); w.curve=c; return w; }
+  function voice(sc,t0,dur,o){
+    const out=ctx.createGain(); out.gain.value=0;
+    const sh=rasp(o.grit), pre=ctx.createGain(); pre.gain.value=o.drive;
+    const o1=ctx.createOscillator(), o2=ctx.createOscillator(); o1.type='sawtooth'; o2.type='square'; o2.detune.value=rnd(10,25);
+    const f=o.f0, F=o1.frequency, F2=o2.frequency;
+    [F,F2].forEach(q=>{ q.setValueAtTime(f*o.start,t0); q.linearRampToValueAtTime(f*o.peak,t0+dur*o.rise); q.setValueAtTime(f*o.peak,t0+dur*.7); q.linearRampToValueAtTime(f*o.end,t0+dur); });
+    const vib=ctx.createOscillator(), vg=ctx.createGain(); vib.frequency.value=rnd(5,7.5); vg.gain.value=f*o.vib; vib.connect(vg); vg.connect(F); vg.connect(F2);
+    const jit=ctx.createOscillator(), jg=ctx.createGain(); jit.type='triangle'; jit.frequency.value=rnd(11,17); jg.gain.value=f*.025; jit.connect(jg); jg.connect(F);
+    const m2=ctx.createGain(); m2.gain.value=.45; o1.connect(pre); o2.connect(m2); m2.connect(pre); pre.connect(sh);
+    const nb=ctx.createBufferSource(); nb.buffer=noiseW; nb.loop=true; const nf=ctx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=3200; nf.Q.value=.6; const ng=ctx.createGain(); ng.gain.value=o.breath;
+    nb.connect(nf); nf.connect(ng);
+    const mix=ctx.createGain(); sh.connect(mix); ng.connect(mix);
+    /* 모음 공명 셋: 모음 흐름을 따라 옮겨 간다 */
+    o.vow.forEach(([vk,at])=>{});
+    [0,1,2].forEach(k=>{
+      const b=ctx.createBiquadFilter(); b.type='bandpass'; b.Q.value=[6,9,12][k];
+      o.vow.forEach(([vk,at],j)=>{ const fr=VOW[vk][k]*(o.formK||1); if(j===0) b.frequency.setValueAtTime(fr,t0); else b.frequency.setTargetAtTime(fr,t0+dur*at,.06); });
+      const g=ctx.createGain(); g.gain.value=[1,.75,.4][k]*3;
+      mix.connect(b); b.connect(g); g.connect(out);
+    });
+    const lowBody=ctx.createBiquadFilter(); lowBody.type='lowpass'; lowBody.frequency.value=900; const lb=ctx.createGain(); lb.gain.value=.5; mix.connect(lowBody); lowBody.connect(lb); lb.connect(out);
+    const G=out.gain, pk=o.gain;
+    G.setValueAtTime(0,t0); G.linearRampToValueAtTime(pk,t0+o.att); G.setTargetAtTime(pk*.85,t0+dur*.5,.4);
+    if(o.cut){ G.setValueAtTime(pk*.8,t0+dur-.05); G.linearRampToValueAtTime(0,t0+dur); }       // '악!' 하고 끊긴다
+    else G.setTargetAtTime(0,t0+dur-.25,.12);
+    out.connect(sc.bus); const w=ctx.createGain(); w.gain.value=o.echo; out.connect(w); w.connect(sc.wet);
+    [o1,o2,vib,jit,nb].forEach(n=>{ n.start(t0); n.stop(t0+dur+.3); });
+  }
+  /* 이를 악물고 부르르 떠는 '으으으': 낮고 거칠게 떨리며 점점 커진다 */
+  function growl(sc,t0,dur){
+    const o1=ctx.createOscillator(); o1.type='sawtooth'; o1.frequency.setValueAtTime(rnd(95,130),t0); o1.frequency.linearRampToValueAtTime(rnd(150,200),t0+dur);
+    const sh=rasp(5), lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=700;
+    const f1=ctx.createBiquadFilter(); f1.type='bandpass'; f1.frequency.value=350; f1.Q.value=5;
+    const trem=ctx.createGain(); trem.gain.value=.6; const lfo=ctx.createOscillator(), lg=ctx.createGain(); lfo.frequency.value=rnd(11,16); lg.gain.value=.4; lfo.connect(lg); lg.connect(trem.gain);
+    const out=ctx.createGain(); out.gain.setValueAtTime(0,t0); out.gain.linearRampToValueAtTime(.26,t0+dur*.85); out.gain.linearRampToValueAtTime(.05,t0+dur);
+    o1.connect(sh); sh.connect(lp); lp.connect(f1); f1.connect(trem); trem.connect(out); lp.connect(out); out.connect(sc.bus);
+    [o1,lfo].forEach(n=>{ n.start(t0); n.stop(t0+dur+.1); });
+  }
+  /* 한 번의 고함을 무작위로 짠다: 한 번에 길게, 또는 두세 번 끊어서 */
+  function shout(buildDur,dur,soft){
+    if(!ctx||!cur) return;
+    const sc=cur, t0=ctx.currentTime;
+    growl(sc,t0,buildDur);
+    const pats=[[['eu',0],['a',.18]],[['a',0]],[['eu',0],['a',.12],['o',.85]],[['ya',0],['a',.2]],[['i',0],['a',.25]]];
+    const parts=Math.random()<.45?1:(Math.random()<.6?2:3);
+    let at=t0+buildDur;
+    const base=rnd(250,380), lens=parts===1?[dur]:parts===2?[dur*.32,dur*.68]:[dur*.22,dur*.25,dur*.53];
+    lens.forEach((d,i)=>{
+      voice(sc,at,d,{f0:base*rnd(.92,1.12)*(i===parts-1?1.08:1),start:rnd(.7,.85),peak:rnd(1.15,1.35),rise:rnd(.15,.35),end:rnd(.65,.9),vib:rnd(.02,.05),
+        grit:rnd(3,9),drive:rnd(.8,1.6),breath:rnd(.08,.2),vow:pats[Math.floor(Math.random()*pats.length)],formK:rnd(.92,1.1),
+        att:rnd(.04,.12),cut:Math.random()<.6,gain:(soft?.2:.4)*rnd(.85,1.15),echo:rnd(.5,.9)});
+      at+=d+rnd(.08,.22);
+    });
+  }
   return {
-    init, enter, setSeated, event,
+    init, enter, setSeated, event, shout,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }

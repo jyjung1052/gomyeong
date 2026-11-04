@@ -12,7 +12,7 @@ let _cb=null; const sent=[];
 const fakeRoom={connected:()=>true,onPeers:f=>{_cb=f;},peers:()=>[],presence:async p=>{sent.push(p);}};
 global.claude={use:async n=>n==='room'?fakeRoom:null};
 global.__sent=sent; global.__push=peers=>_cb&&_cb({peers});
-const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm};})();');
+const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm,Yell,activate};})();');
 (0,eval)(src);
 const T=globalThis.__T;
 let n=0;
@@ -34,4 +34,12 @@ T.S.mode='hub'; T.goDoor(2); T.update(.016);
   for(let i=0;i<30;i++) T.update(.05);
   console.log('PRESENCE_SENT',__sent.length,JSON.stringify(__sent[__sent.length-1]));
 })();
+/* 우레: 데크에 서서 소리치기 한 번을 끝까지 */
+{ const w=T.BUILD.thunder(); T.activate(w); T.S.mode='scene'; T.S.realm={id:'thunder',color:'#d4b04a'};
+  const m=T.S.me; m.x=5; m.z=0; m.tx=5; m.tz=0; m.sitting=false;
+  if(!w.yellSpot(5,0)||w.yellSpot(0,20)) throw new Error('yellSpot');
+  T.update(.05); T.Yell.start('시베리아에서 귤이나 까라!!!'); if(!T.Yell.busy()) throw new Error('yell not started');
+  let k=0; while(T.Yell.busy()&&k<400){ T.update(.05); k++; }
+  if(T.Yell.busy()) throw new Error('yell never ended');
+  console.log('YELL_OK frames',k); T.S.mode='hub'; T.activate(T.hub); }
 console.log('STUB_RUN_OK scenes:',n);

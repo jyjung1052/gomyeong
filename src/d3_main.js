@@ -352,14 +352,14 @@ function update(dt){
   S.t+=dt;
   const fx=-Math.sin(c.yaw), fz=-Math.cos(c.yaw), rx=Math.cos(c.yaw), rz=-Math.sin(c.yaw);
   const kf=keys.up-keys.down, kr=keys.right-keys.left;
-  const active=S.mode!=='login'&&!S.busy;
+  const active=S.mode!=='login'&&!S.busy&&!Yell.busy();
   if((kf||kr)&&active){
     if(m.sitting) setSit(false);
     const l=Math.hypot(kf,kr)||1;
     const vx=(fx*kf+rx*kr)/l, vz=(fz*kf+rz*kr)/l;
     const sw=1-.4*clamp(footPose(m.x,m.z).dep,0,1.2)/1.2; m.x+=vx*3.4*sw*dt; m.z+=vz*3.4*sw*dt; m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=true;
     m.heading+=angDiff(m.heading,Math.atan2(vx,vz))*(1-Math.exp(-12*dt));
-  }else if(!m.sitting&&S.mode!=='login'){
+  }else if(!m.sitting&&S.mode!=='login'&&!Yell.busy()){
     const dx=m.tx-m.x, dz=m.tz-m.z, d=Math.hypot(dx,dz);
     if(d>.05){
       const st=Math.min(d,3.4*(1-.4*clamp(footPose(m.x,m.z).dep,0,1.2)/1.2)*dt);
@@ -403,6 +403,7 @@ function update(dt){
   alignFlats(figure,m.x,m.z);
   const haloK=m.sitting?clamp(S.sitTime/45,0,1)*.9+.1:0;
   figure.update(S.t,m.sitting,m.walking,m.breath,S.realm?S.realm.color:'#ffffff',haloK,S.breathOn&&S.mode==='scene',m.lie);
+  Yell.pose(figure); Yell.tick(dt);
   Together.tick(dt,S.t);
 
   /* 카메라: 캐릭터 뒤에서 따라가고, 앉으면 가까워진다 */
@@ -413,7 +414,9 @@ function update(dt){
   const d=c.dist*c.zoom, cp=Math.cos(c.pitch);
   c.pos.set(c.tgt.x+Math.sin(c.yaw)*cp*d,Math.max(.5,c.tgt.y+Math.sin(c.pitch)*d),c.tgt.z+Math.cos(c.yaw)*cp*d);
   if(world.groundH){ const lo=Math.max(world.groundH(c.pos.x,c.pos.z),world.waterY)+.7; if(c.pos.y<lo) c.pos.y=lo; }
-  camera.position.copy(c.pos); camera.lookAt(c.tgt);
+  camera.position.copy(c.pos);
+  const sk=Yell.shake(); if(sk){ camera.position.x+=(Math.random()-.5)*sk*2; camera.position.y+=(Math.random()-.5)*sk*2; camera.position.z+=(Math.random()-.5)*sk*2; }
+  camera.lookAt(c.tgt);
   CUT.uCam.value.copy(c.pos); CUT.uMe.value.set(m.x,P.y+(m.sitting?.5:.85),m.z);
 }
 let last=performance.now();

@@ -19,7 +19,7 @@ const REALMS=[
   {id:'rain',name:'원두막',short:'빗소리',line:'처마에 듣는 빗소리',color:'#6f8f8a'},
   {id:'field',name:'들녘',short:'바람과 풀숲',line:'풀잎이 사그락이는 바람',color:'#a9a05a'},
   /* 검은 방: 하얀 방 맞은편 반원. 쌓인 마음을 몸으로 터뜨리는 곳(아직 짓는 중) */
-  {id:'thunder',name:'우레',short:'마음껏 소리치기',line:'대나무숲에 소리치기',color:'#d4b04a',dark:true,soon:true},
+  {id:'thunder',name:'우레',short:'마음껏 소리치기',line:'대나무숲에 소리치기',color:'#d4b04a',dark:true},
   {id:'bolt',name:'벼락',short:'와장창 깨기',line:'접시와 유리병 깨기',color:'#f0e070',dark:true,soon:true},
   {id:'spout',name:'용오름',short:'허공에 발차기',line:'이불 위 하이킥',color:'#6f8fe0',dark:true,soon:true},
   {id:'hail',name:'우박',short:'두드리고 때리기',line:'베개 두드리기',color:'#b9c8d8',dark:true,soon:true},
@@ -139,7 +139,9 @@ function buildFigure(){
   head.add(ball(.235,skin,0,0,0)); head.add(ball(.055,skin,-.235,-.01,0)); head.add(ball(.055,skin,.235,-.01,0));
   const cap=new THREE.Mesh(new THREE.SphereGeometry(.255,28,16,0,TAU,0,Math.PI*.43),hairM); cap.position.set(0,.02,-.025); cap.rotation.x=-.18; head.add(cap);
   head.add(ball(.215,hairM,0,.01,-.09,1.1,.86,.9));
-  [-1,1].forEach(sx=>{ const br=mesh(new THREE.BoxGeometry(.07,.011,.01),hairM,sx*.085,.082,.22); br.rotation.z=0; head.add(br); });
+  const brows=[-1,1].map(sx=>{ const br=mesh(new THREE.BoxGeometry(.07,.011,.01),hairM,sx*.085,.082,.22); br.rotation.z=0; head.add(br); return br; });
+  /* 고함칠 때만 보이는 크게 벌린 입 */
+  const mouth=ball(.05,M('#5a2a26',{shininess:10}),0,-.1,.2,1.1,1,.5); mouth.visible=false; head.add(mouth);
   const eyesOpen=new THREE.Group(), eyesClosed=new THREE.Group();
   eyesOpen.add(ball(.028,ink,-.085,.03,.21),ball(.028,ink,.085,.03,.21));
   [-.085,.085].forEach(x=>eyesClosed.add(mesh(new THREE.BoxGeometry(.075,.014,.01),ink,x,.03,.225)));
@@ -197,8 +199,35 @@ function buildFigure(){
   const ring=mesh(new THREE.RingGeometry(.97,1,48),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,fog:false}),0,.06,0);
   ring.rotation.x=-Math.PI/2; root.add(ring);
 
+  /* 분노 몸짓: stage 'build'(꾹 참으며 몸을 비틀고 부르르) → 'yell'(고개 젖히고 팔 벌려 터뜨림). null이면 원래대로 */
+  const yell=(t,stage,u)=>{
+    if(!stage){
+      upper.rotation.set(0,0,0); upper.position.x=0; head.rotation.set(0,0,0); armL.rotation.z=0; armR.rotation.z=0; armL.rotation.y=0; armR.rotation.y=0;
+      mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return;
+    }
+    const jit=(a)=>(Math.sin(t*61)+Math.sin(t*47+1.3))*.5*a;
+    eyesOpen.visible=false; eyesClosed.visible=true;
+    brows[0].rotation.z=-.45; brows[1].rotation.z=.45; brows[0].position.y=brows[1].position.y=.065;
+    if(stage==='build'){
+      const k=Math.min(1,u*1.6), writhe=Math.sin(t*6.5)*.42*k+Math.sin(t*3.1)*.2*k;
+      upper.rotation.set(.22*k+jit(.04*k),writhe,Math.sin(t*4.7)*.16*k+jit(.05*k));
+      upper.position.y-=.08*k; upper.position.x=jit(.025*k);
+      head.rotation.set(.35*k+jit(.06*k),-writhe*.5,jit(.06*k));
+      armL.rotation.x=-1.25*k+jit(.15*k); armR.rotation.x=-1.25*k+jit(.15*k);   // 주먹을 가슴 앞에 움켜쥔다
+      armL.rotation.z=.55*k; armR.rotation.z=-.55*k;
+      mouth.visible=u>.55; mouth.scale.set(1.3,.35+.3*u,.5);
+    }else{
+      const k=Math.min(1,u*6), fade=u>.85?1-(u-.85)/.15:1, shake=.07*fade;
+      upper.rotation.set(-.32*k*fade+jit(shake),jit(shake*.6),jit(shake));
+      upper.position.x=jit(.03*fade);
+      head.rotation.set(-.55*k*fade+jit(shake*1.5),jit(shake),jit(shake));
+      armL.rotation.x=-.5*k*fade; armR.rotation.x=-.5*k*fade;
+      armL.rotation.z=-2.3*k*fade+jit(.12*fade); armR.rotation.z=2.3*k*fade+jit(.12*fade);   // 두 팔을 하늘로 벌린다
+      mouth.visible=true; mouth.scale.set(1.25,1.6*k*fade+.3,.55);
+    }
+  };
   return {
-    root, shadow, flats:[shadow,halo,ring],
+    root, shadow, flats:[shadow,halo,ring], yell,
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
       legsStand.visible=!sit; legsSit.visible=sit;
