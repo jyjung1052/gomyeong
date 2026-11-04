@@ -232,7 +232,7 @@ const HUB_C={x:0,z:2}, HUB_R=8.5;
 const WHITE_N=REALMS.filter(r=>!r.dark).length, BLACK_N=REALMS.length-WHITE_N;
 const DOORS=REALMS.map((r,i)=>{
   /* 하얀 문은 앞쪽 반원, 검은 문은 뒤쪽 반원 */
-  const th=r.dark?Math.PI+(i-WHITE_N-(BLACK_N-1)/2)*Math.min(.6,3.12/(BLACK_N-1)):(i-(WHITE_N-1)/2)*Math.min(.52,3.12/(WHITE_N-1)), sn=Math.sin(th), cs=Math.cos(th);
+  const GAP=TAU/(WHITE_N+BLACK_N), th=r.dark?Math.PI+(i-WHITE_N-(BLACK_N-1)/2)*GAP:(i-(WHITE_N-1)/2)*GAP, sn=Math.sin(th), cs=Math.cos(th);   // 열여섯 문을 원 둘레에 같은 간격으로
   const x=HUB_C.x+sn*HUB_R, z=HUB_C.z-cs*HUB_R;
   return {realm:r,x,z,ry:-th,w:2.2,h:4.5,ax:x-sn*2.4,az:z+cs*2.4};
 });
