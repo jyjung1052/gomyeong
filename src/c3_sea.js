@@ -2,7 +2,8 @@
 const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 /* 바닷속 바닥: 무릎 깊이(-.9)까지는 완만하게, 그 너머는 더 가파르게 깊어져 헤엄칠 수 있다 */
 const SEA_WATER=-.15;
-function sandH(x,z){ const d=-1-z; return (z<-1?-(d<6.43?d*.14:.9+(d-6.43)*.2):0)+.05*Math.sin(x*.2)*Math.sin(z*.15); }
+/* 물가(z=-1)에서 숲 쪽으로 모래가 꾸준히 높아진다: 바닷물이 모래 위로 솟을 틈이 없게 */
+function sandH(x,z){ const d=-1-z; return (z<-1?-(d<6.43?d*.14:.9+(d-6.43)*.2):.06*(z+1)-.012*Math.min(z+1,4))+.03*Math.sin(x*.2)*Math.sin(z*.15)*smooth(-1,3,z); }
 
 /* 해변 뒤쪽: 모래가 풀 덮인 둔덕으로 올라가고, 양 끝은 숲 우거진 곶이 된다 */
 function seaBackH(x,z){
@@ -119,7 +120,7 @@ function buildSea(){
   for(let i=0;i<8;i++){ const x=(R()-.5)*32, z=-1.2+Math.pow(R(),1.3)*9, s=.05+R()*.1; pebbles.push({x,y:sandH(x,z)+s*.2,z,sx:s*1.3,sy:s,sz:s,ry:R()*6,c:choice(R,['#8d8478','#a39a8c','#6f6a60','#b3a89a'])}); }
   for(let i=0;i<2;i++){ const x=(R()-.5)*28, z=-1.2+R()*2.2; pebbles.push({x,y:sandH(x,z)+.02,z,sx:.5+R()*.4,sy:.07,sz:.3+R()*.2,ry:R()*6,c:'#4d5a38'}); }
   g.add(instances(conchGeo(),shellMat,conch)); g.add(instances(scallopGeo(),shellMat,scal)); g.add(instances(starGeo(),shellMat,stars)); g.add(instances(rockGeo(),VC({vertexColors:false}),pebbles));
-  const rocks=[]; for(let i=0;i<3;i++){ const s=.6+R()*1.0, x=(i<5?-1:1)*(15+R()*8); rocks.push({x,y:s*.2,z:5+R()*8,sx:s*1.3,sy:s,sz:s,ry:R()*3,c:choice(R,['#9a8f80','#8a8074','#a89c8a'])}); }
+  const rocks=[]; for(let i=0;i<3;i++){ const s=.6+R()*1.0, x=(i<5?-1:1)*(15+R()*8); const rz=5+R()*8; rocks.push({x,y:s*.2+sandH(x,rz),z:rz,sx:s*1.3,sy:s,sz:s,ry:R()*3,c:choice(R,['#9a8f80','#8a8074','#a89c8a'])}); }
   g.add(instances(rockGeo(),VC({vertexColors:false}),rocks));
   /* 프라이빗 비치: 야자숲, 우거진 언덕, 양쪽의 곶 */
   const palms=[], jungle=[], avoidL=[];
@@ -142,7 +143,7 @@ function buildSea(){
   /* 파라솔과 선베드 */
   const wood2=M('#a98558',{shininess:6}), cush=M('#fbfaf5',{shininess:4});
   const lounger=(x,z)=>{
-    const gr=new THREE.Group(); gr.position.set(x,0,z);
+    const gr=new THREE.Group(); gr.position.set(x,sandH(x,z),z);
     [[-.35,-.9],[.35,-.9],[-.35,.8],[.35,.8]].forEach(([a,b])=>gr.add(mesh(new THREE.BoxGeometry(.06,.3,.06),wood2,a,.15,b)));
     gr.add(mesh(new THREE.BoxGeometry(.8,.06,1.9),wood2,0,.3,0));
     gr.add(mesh(new THREE.BoxGeometry(.72,.1,1.1),cush,0,.38,-.25));
@@ -152,12 +153,12 @@ function buildSea(){
   const stripe=canvasTex(64,8,(c,w,h)=>{ for(let i=0;i<8;i++){ c.fillStyle=i%2?'#fbfaf5':'#45a9b8'; c.fillRect(i*8,0,8,h); } });
   stripe.wrapS=THREE.RepeatWrapping; stripe.repeat.set(2,1);
   const parasol=(x,z)=>{
-    g.add(mesh(new THREE.CylinderGeometry(.035,.04,2.5,8),wood2,x,1.25,z));
-    const cp=mesh(new THREE.ConeGeometry(2.1,.6,16,1,true),new THREE.MeshPhongMaterial({map:stripe,side:THREE.DoubleSide,shininess:4}),x,2.55,z); g.add(cp);
+    const py=sandH(x,z); g.add(mesh(new THREE.CylinderGeometry(.035,.04,2.5,8),wood2,x,1.25+py,z));
+    const cp=mesh(new THREE.ConeGeometry(2.1,.6,16,1,true),new THREE.MeshPhongMaterial({map:stripe,side:THREE.DoubleSide,shininess:4}),x,2.55+py,z); g.add(cp);
     avoidL.push({x,z,r:.2});
   };
   [[-8.5,10.2],[24,14.5]].forEach(([cx,cz])=>{ lounger(cx-1.2,cz); lounger(cx+1.2,cz); parasol(cx,cz); });
-  const log=mesh(new THREE.CylinderGeometry(.16,.2,4.5,14,6),M('#8b6f52'),-11,.2,6); log.rotation.z=Math.PI/2; log.rotation.y=.5; g.add(log);
+  const log=mesh(new THREE.CylinderGeometry(.16,.2,4.5,14,6),M('#8b6f52'),-11,.2+sandH(-11,6),6); log.rotation.z=Math.PI/2; log.rotation.y=.5; g.add(log);
 
   /* 먼 바다: 섬, 등대, 돛단배 */
   const isl=[[-70,-150,38,14,20,0],[-20,-235,64,22,28,1],[92,-195,32,9,16,2]];

@@ -55,7 +55,7 @@ body{
 .pill,.chip,.pillbox{background:var(--pill);border:1px solid var(--pill-edge);border-radius:999px;color:var(--ink);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .pill{pointer-events:auto;font:inherit;font-size:14px;padding:8px 14px;min-height:40px;cursor:pointer;white-space:nowrap}
 .pill:hover{background:rgba(255,255,255,.95)}
-.sit{font-family:var(--display);font-weight:700;font-size:18px;padding:10px 26px;min-height:48px}
+.sit{font-family:var(--display);font-weight:700;font-size:20px;padding:12px 22px;min-height:56px;min-width:132px}
 [hidden]{display:none!important}
 .timer{pointer-events:none;font-variant-numeric:tabular-nums;color:#55534c;display:flex;align-items:center;height:40px;padding-block:0}
 .who{pointer-events:none;color:#55534c;display:flex;align-items:center;height:40px;padding-block:0}
@@ -134,7 +134,7 @@ body{
     <div id="sitRow" class="row fadey">
       <button id="breathBtn" class="pill" type="button" aria-pressed="true">호흡 안내 켬</button>
       <button id="sitBtn" class="pill sit" type="button">여기 앉기</button>
-      <button id="lieBtn" class="pill" type="button">눕기</button>
+      <button id="lieBtn" class="pill sit" type="button">눕기</button>
       <div id="timer" class="pill timer">앉은 시간 00:00</div>
     </div>
   </div>
