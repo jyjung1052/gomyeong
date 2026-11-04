@@ -139,7 +139,7 @@ function buildSea(){
   }
   g.add(instances(palmGeo(),VC({side:THREE.DoubleSide,shininess:8}),palms));
   g.add(instances(broadGeo(),VC(),jungle));
-  [[-112,-10,50,18,70,.4],[112,-10,50,18,70,2.2],[-150,30,60,24,60,1],[150,30,60,24,60,3]].forEach(([x,z,sx,sy,sz,r])=>{ const m=mesh(islandGeo(),VC(),x,-.5,z); m.scale.set(sx,sy,sz); m.rotation.y=r; g.add(m); });
+  [[-150,-10,50,18,70,.4],[150,-10,50,18,70,2.2],[-190,30,60,24,60,1],[190,30,60,24,60,3]].forEach(([x,z,sx,sy,sz,r])=>{ const m=mesh(islandGeo(),VC(),x,-.5,z); m.scale.set(sx,sy,sz); m.rotation.y=r; g.add(m); });
   /* 파라솔과 선베드 */
   const wood2=M('#a98558',{shininess:6}), cush=M('#fbfaf5',{shininess:4});
   const lounger=(x,z)=>{
