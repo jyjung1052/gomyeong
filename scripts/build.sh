@@ -8,5 +8,8 @@ sed -i "s#__RELAY_URL__#${RELAY_URL:-wss://gomyeong-relay.gomyeong.workers.dev/w
 node --check dist/app.js
 { cat src/a_head.html; echo "<script>"; cat dist/app.js; echo "</script>"; } > dist/index.html
 rm -rf dist/snd; cp -r assets/snd dist/snd
+VER=$(git rev-parse --short HEAD 2>/dev/null || date +%s)
+echo "$VER" > dist/version.txt
+sed -i "s#__BUILD__#$VER#" dist/index.html
 touch dist/.nojekyll
 echo "built dist/index.html ($(wc -c < dist/index.html) bytes)"

@@ -1,5 +1,21 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <title>고요의 문 3D</title>
+<script>
+/* 새 버전이 올라갔는데 브라우저가 예전 페이지를 쥐고 있으면 스스로 새로 불러온다 */
+(function(){
+  var BUILD='__BUILD__';
+  function check(){
+    try{
+      fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(v){
+        v=(v||'').trim();
+        if(v&&v!==BUILD&&!/^__/.test(BUILD)&&location.search.indexOf('v='+v)<0) location.replace(location.pathname+'?v='+v);
+      }).catch(function(){});
+    }catch(e){}
+  }
+  check();
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') check(); });
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap">
