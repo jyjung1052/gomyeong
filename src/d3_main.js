@@ -17,9 +17,9 @@ const figure=buildFigure(); scene.add(figure.root);
 const hub=buildHub();
 const cache={};
 let world=null;
-/* 시야 뚫기: 카메라와 내 몸 사이를 가리는 나무·바위(여러 개 찍어 낸 물체)는 그 부분만 비워 보여 준다.
+/* 시야 비우기: 카메라와 내 몸 사이를 가리는 나무·바위(여러 개 찍어 낸 물체)는 그 한 그루를 통째로 화면에서 없앤다.
    들녘 풀숲처럼 몸이 묻혀야 하는 것은 material.userData.noCut 으로 뺀다 */
-const CUT={uCam:{value:new THREE.Vector3()},uMe:{value:new THREE.Vector3()},uR:{value:1.15}};
+const CUT={uCam:{value:new THREE.Vector3()},uMe:{value:new THREE.Vector3()},uR:{value:.9}};
 function cutaway(group){
   group.traverse(o=>{
     if(!o.isInstancedMesh) return;
@@ -30,17 +30,24 @@ function cutaway(group){
       m.onBeforeCompile=(sh,r)=>{
         if(prev) prev.call(m,sh,r);
         sh.uniforms.uCam=CUT.uCam; sh.uniforms.uMe=CUT.uMe; sh.uniforms.uR=CUT.uR;
-        sh.vertexShader='varying vec3 vCutW;\n'+sh.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
-          vec4 cutP=vec4(transformed,1.0);
+        sh.vertexShader='uniform vec3 uCam;\nuniform vec3 uMe;\nuniform float uR;\n'+sh.vertexShader.replace('#include <project_vertex>',`
           #ifdef USE_INSTANCING
-            cutP=instanceMatrix*cutP;
+          {
+            mat4 cutM=modelMatrix*instanceMatrix;
+            vec3 cutO=(cutM*vec4(0.0,0.0,0.0,1.0)).xyz, cutUp=(cutM*vec4(0.0,1.0,0.0,0.0)).xyz;
+            float cutS=length((cutM*vec4(1.0,0.0,0.0,0.0)).xyz);
+            vec3 cutAB=uMe-uCam; float cutL=max(dot(cutAB,cutAB),1e-4); bool cutHide=false; float cutRad=min(1.5*cutS,3.2);
+            for(int k=0;k<5;k++){
+              vec3 q=cutO+cutUp*(0.3+float(k)*1.5);
+              float t=dot(q-uCam,cutAB)/cutL;
+              if(t>0.0&&t<0.95&&length(q-(uCam+cutAB*t))<uR*(0.4+0.6*t)+cutRad) cutHide=true;
+            }
+            if(cutHide&&cutS<6.0) transformed=vec3(0.0);   // 그 한 그루를 통째로 접어 없앤다
+          }
           #endif
-          vCutW=(modelMatrix*cutP).xyz;`);
-        sh.fragmentShader='varying vec3 vCutW;\nuniform vec3 uCam;\nuniform vec3 uMe;\nuniform float uR;\n'+sh.fragmentShader.replace('void main() {',`void main() {
-          vec3 cutAB=uMe-uCam; float cutT=dot(vCutW-uCam,cutAB)/max(dot(cutAB,cutAB),1e-4);
-          if(cutT>0.0&&cutT<0.93){ float cutD=length(vCutW-(uCam+cutAB*cutT)); if(cutD<uR*(0.3+0.7*cutT)) discard; }`);
+          #include <project_vertex>`);
       };
-      m.customProgramCacheKey=()=>'cut'+(prevKey?prevKey.call(m):'');
+      m.customProgramCacheKey=()=>'cut2'+(prevKey?prevKey.call(m):'');
       m.needsUpdate=true;
     });
   });
