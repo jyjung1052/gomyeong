@@ -54,7 +54,7 @@ function cutaway(group){
 }
 function activate(w){
   if(world) scene.remove(world.group);
-  cutaway(w.group);
+  if(!w.noCut) cutaway(w.group);   // 원두막은 예전처럼(가려도 그대로)
   world=w; scene.add(w.group);
   scene.fog=new THREE.Fog(w.fog.c,w.fog.n,w.fog.f);
   scene.background=new THREE.Color(w.bg);

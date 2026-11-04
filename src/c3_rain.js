@@ -262,7 +262,7 @@ function buildRain(){
 
   const rc=new THREE.Raycaster(), dir=new THREE.Vector3(), head=new THREE.Vector3();
   const bounds={union:rects};
-  return {group:g,fog:{c:0x9aa59f,n:10,f:125},bg:0x9aa59f,bounds,avoid,
+  return {group:g,noCut:true,fog:{c:0x9aa59f,n:10,f:125},bg:0x9aa59f,bounds,avoid,
     spawn:{x:0,z:.3},floorY:H,pitch:.16,pitchSit:.1,
     update(t,dt,me){
       const s=spd();
