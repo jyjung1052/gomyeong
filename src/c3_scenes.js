@@ -91,9 +91,36 @@ function pineSnowGeo(){
   });
   return merge(parts);
 }
+/* 눈 덮인 가문비나무: 줄기에서 가지가 층층이 돌려나고, 아래 가지일수록 길고 축 처진다. 가지 윗면에만 눈이 얹힌다 */
+function spruceGeo(seed){
+  const R=rng(seed), parts=[];
+  const H=7.4+R()*2.4, lean=(R()-.5)*.35, la=R()*TAU;
+  const tx=y=>Math.cos(la)*lean*(y/H)*(y/H)*H*.08, tz=y=>Math.sin(la)*lean*(y/H)*(y/H)*H*.08;
+  const trunk=new THREE.CylinderGeometry(.06,.3,H,8,8); trunk.translate(0,H/2,0);
+  displace(trunk,(x,y,z)=>{ const k=1+.1*nz(x*8,y*2,z*8); return [x*k+tx(y),y,z*k+tz(y)]; });
+  parts.push({geo:trunk,color:'#3e3028',shade:y=>.7+.3*nz(y*2,1,3)});
+  const N=13+Math.floor(R()*4), y0=1.0+R()*.5;
+  for(let w=0;w<N;w++){
+    const t=w/(N-1), y=y0+t*(H-y0-.5), Lb=.35+2.4*Math.pow(1-t,1.05)*(.85+R()*.3);
+    const nf=Math.max(4,Math.round(5+3*(1-t)+R()*2)), off=R()*TAU, droop=.18+.5*(1-t)+R()*.12;
+    for(let f=0;f<nf;f++){
+      if(R()<.1) continue;                                           // 군데군데 빠진 가지
+      const az=off+f/nf*TAU+(R()-.5)*.5, L=Lb*(.75+R()*.4);
+      const fr=new THREE.CylinderGeometry(.03,.07+L*.11,L,4,2,true); fr.translate(0,L/2,0);
+      fr.scale(.42,1,1);                                              // 위아래로 얇고 옆으로 넓은 가지 다발
+      displace(fr,(x,yy,z)=>{ const u=yy/L; return [x*(1+.5*u)+.04*nz(yy*5,x,z),yy,z*(1+1.8*u)]; });  // 끝으로 갈수록 넓게 퍼진다
+      fr.rotateZ(-(Math.PI/2+droop));                                 // 수평에서 아래로 처짐
+      const bend=new THREE.Matrix4().makeRotationY(az); fr.applyMatrix4(bend);
+      fr.translate(tx(y),y+(R()-.5)*.12,tz(y));
+      parts.push({geo:fr,color:R()<.5?'#27452f':'#2f4f35',shade:yy=>.75+.35*nz(yy*3,az,1)});
+    }
+  }
+  const tip=new THREE.ConeGeometry(.22,1.1,7,2); tip.translate(tx(H),H+.1,tz(H)); parts.push({geo:tip,color:'#2c4a33'});
+  return snowify(merge(parts),.95,.25);
+}
 /* 눈꽃 핀 나뭇가지: 가지마다 눈이 두껍게 앉고, 끝마다 눈송이 뭉치가 꽃처럼 핀다 */
-function bareTreeGeo(){
-  const parts=[], R=rng(41), BR='#5d483a', SN=['#ffffff','#f3f8fd','#e8f0f8'];
+function bareTreeGeo(seed){
+  const parts=[], R=rng(seed||41), BR='#5d483a', SN=['#ffffff','#f3f8fd','#e8f0f8'];
   const puff=(x,y,z,r)=>{
     const g=new THREE.SphereGeometry(r,7,5); g.scale(1.2,.78,1);
     displace(g,(px,py,pz)=>{ const k=1+.25*nz(px*9+x,py*9+y,pz*9+z); return [px*k,py*k,pz*k]; });
@@ -118,8 +145,9 @@ function bareTreeGeo(){
   displace(trunk,(x,y,z)=>[x+.08*Math.sin(y*.8),y,z+.05*nz(x,y,0)]);
   parts.push({geo:trunk,color:BR});
   for(let k=0;k<5;k++){ const s=new THREE.SphereGeometry(1,7,5); s.scale(.1,.5+R()*.4,.17); s.translate(.18,.9+k*.8,(R()-.5)*.1); parts.push({geo:s,color:'#fbfdff'}); }
-  for(let i=0;i<9;i++){
-    const h=2.3+i*.46, az=i*2.4+R(), tilt=.55+R()*.6, len=1.3+R()*1.4;
+  const NL=7+Math.floor(R()*5), lean=(R()-.5)*.25;
+  for(let i=0;i<NL;i++){
+    const h=2.0+i*(3.4/NL)+R()*.2, az=i*2.4+R()*1.2, tilt=.45+R()*.75+lean, len=1.1+R()*1.7;
     const e=limb(len,.09,.03,tilt,az,0,h,0,true);
     limb(len*.6,.04,.015,tilt+.5,az+1.2+R(),e.x,e.y,e.z,true);
     limb(len*.5,.035,.012,tilt*.4,az-1.2-R(),e.x,e.y,e.z,true);
@@ -139,10 +167,13 @@ function buildForest(){
   const FR=34;                       /* 걸을 수 있는 숲의 반지름 */
   const avoid=[];
   /* 숲 가장자리를 둘러싼 빽빽한 나무 */
-  g.add(instances(pineSnowGeo(),VC(),ringScatter(R,320,FR+3,96,(x,z)=>{ const s=.85+R()*1.0; return {x,y:-.05,z,sx:s,sy:s*(.9+R()*.4),sz:s,ry:R()*6,c:choice(R,WIN)}; })));
-  g.add(instances(bareTreeGeo(),VC(),ringScatter(R,170,FR+2,92,(x,z)=>{ const s=.9+R()*.7; return {x,y:-.05,z,sx:s,sy:s,sz:s,ry:R()*6,c:'#ffffff'}; })));
+  const SPR=[3,17,29,44].map(sd=>spruceGeo(sd)), BARE=[41,58,73].map(sd=>bareTreeGeo(sd));
+  const spread=(geos,items)=>geos.forEach((gg,k)=>{ const its=items.filter((_,i)=>i%geos.length===k); if(its.length) g.add(instances(gg,VC(),its)); });
+  spread(SPR,ringScatter(R,150,FR+3,56,(x,z)=>{ const s=.8+R()*.75; return {x,y:-.05,z,sx:s,sy:s*(.9+R()*.35),sz:s,ry:R()*6,c:choice(R,WIN)}; }));
+  g.add(instances(pineSnowGeo(),VC(),ringScatter(R,200,56,96,(x,z)=>{ const s=.95+R()*1.0; return {x,y:-.05,z,sx:s,sy:s*(.95+R()*.4),sz:s,ry:R()*6,c:choice(R,WIN)}; })));
+  spread(BARE,ringScatter(R,170,FR+2,92,(x,z)=>{ const s=.9+R()*.7; return {x,y:-.05,z,sx:s,sy:s,sz:s,ry:R()*6,c:'#ffffff'}; }));
   /* 숲 안쪽: 빈터를 두고 드문드문 선 나무(몸통은 피해 걷는다) */
-  const inner=(list,geo,n,sMin,sRng,colorFn)=>{
+  const inner=(geos,n,sMin,sRng,colorFn)=>{
     const its=[]; let guard=0;
     while(its.length<n&&guard++<4000){
       const a=R()*TAU, r=Math.sqrt(R())*(FR-1.5), x=Math.cos(a)*r, z=Math.sin(a)*r;
@@ -150,10 +181,10 @@ function buildForest(){
       if(avoid.some(o=>Math.hypot(o.x-x,o.z-z)<2.6)) continue;
       const s=sMin+R()*sRng; its.push({x,y:-.05,z,sx:s,sy:s*(.9+R()*.3),sz:s,ry:R()*6,c:colorFn()}); avoid.push({x,z,r:.5*s});
     }
-    g.add(instances(geo,VC(),its));
+    spread(geos,its);
   };
-  inner(null,pineSnowGeo(),70,.85,.9,()=>choice(R,WIN));
-  inner(null,bareTreeGeo(),46,.9,.6,()=>'#ffffff');
+  inner(SPR,70,.8,.8,()=>choice(R,WIN));
+  inner(BARE,46,.9,.6,()=>'#ffffff');
   g.add(instances(snowify(bushGeo(),.97,-.2),VC(),ringScatter(R,260,11,64,(x,z)=>{ const s=.5+R()*.9; return {x,y:.0,z,sx:s*1.2,sy:s*.9,sz:s*1.2,ry:R()*6,c:choice(R,WIN)}; })));
   const stones=[[-4,-4,1.1],[5,-2,.8],[-6,3,.9]].map(([x,z,s])=>({x,y:s*.25,z,sx:s*1.3,sy:s,sz:s*1.1,ry:x,c:'#c9d3dc'}));
   g.add(instances(rockGeo(),VC({vertexColors:false}),stones));
