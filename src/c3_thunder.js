@@ -111,7 +111,7 @@ function buildThunder(){
 
   /* 대나무: 길과 샛길, 연못 둘레만 비우고 사방으로 빽빽하게. 멀리는 안개 속으로 끝없이 */
   const clear=(x,z)=>pondDist(x,z)<TH_DECK+1.6||onLane(x,z);
-  const culms=[[],[],[],[]], avoid=TH_PONDS.map(p=>({x:p.x,z:p.z,r:TH_POND+.15}));
+  const culms=[[],[],[],[]], avoid=TH_PONDS.map(p=>({x:p.x,z:p.z,r:RAIL+.26}))   // 난간 앞에서 멈춘다;
   for(let n=0,tries=0;n<2600&&tries<40000;tries++){
     const near=R()<.7, rr=near?Math.sqrt(R())*TH_R+2:TH_R+Math.pow(R(),.7)*55, a=R()*TAU, x=Math.cos(a)*rr, z=Math.sin(a)*rr;
     if(clear(x,z)) continue;
@@ -178,7 +178,7 @@ function buildThunder(){
   return {group:g,fog:{c:0xb3c2a6,n:6,f:58},bg:0xb3c2a6,bounds:{circle:[0,0,TH_R]},avoid,
     spawn:{x:0,z:TH_PATHZ},spawnJ:[2,3],groundH:thunderH,waterY:-1000,pitch:.24,pitchSit:.14,
     /* 데크 위(연못 둘레)에 서 있으면 소리칠 수 있다 */
-    yellSpot(x,z){ return TH_PONDS.some(P=>{ const r=Math.hypot(x-P.x,z-P.z); return r>RAIL+.16&&r<TH_DECK-.1; }); },
+    yellSpot(x,z){ return TH_PONDS.some(P=>{ const r=Math.hypot(x-P.x,z-P.z); return r>TH_POND&&r<TH_DECK; }); },   // 난간에 붙어 서도 데크 위면 소리칠 수 있다
     /* 소리치면 대숲이 크게 출렁이고 새들이 날아오른다 */
     shout(power,x,z){
       gustT=4.5*(power||1);

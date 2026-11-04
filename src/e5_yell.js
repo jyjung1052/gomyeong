@@ -7,8 +7,12 @@ const Yell=(()=>{
   const box=document.createElement('div'); box.id='yellBox'; box.className='yellbox'; box.hidden=true;
   box.innerHTML='<p class="yq"></p><div class="ych"></div><form class="yme"><input maxlength="24" placeholder="직접 써서 외치기" aria-label="외칠 말"><button class="pill" type="submit">외치기</button></form><button class="pill sit ygo" type="button">네, 지를래요!</button>';
   const q=box.querySelector('.yq'), chips=box.querySelector('.ych'), form=box.querySelector('.yme'), inp=form.querySelector('input'), go=box.querySelector('.ygo');
-  SHOUTS.forEach(t=>{ const b=document.createElement('button'); b.type='button'; b.className='pill ychip'; b.textContent=t; b.addEventListener('click',()=>start(t)); chips.appendChild(b); });
-  go.addEventListener('click',()=>start(SHOUTS[0]));
+  SHOUTS.forEach(t=>{ const b=document.createElement('button'); b.type='button'; b.className='pill ychip'; b.textContent=t; b.addEventListener('click',()=>pick(t)); chips.appendChild(b); });
+  /* 두 번째부터는 외칠 말을 골라 두고, 큰 "네, 지를래요!" 버튼으로 지른다 */
+  let sel=SHOUTS[0];
+  function pick(t){ sel=t; chips.querySelectorAll('.ychip').forEach(b=>b.classList.toggle('on',b.textContent===t)); }
+  pick(SHOUTS[0]);
+  go.addEventListener('click',()=>start(count===0?SHOUTS[0]:sel));
   form.addEventListener('submit',e=>{ e.preventDefault(); const t=inp.value.trim(); if(t){ start(/[!]$/.test(t)?t:t+'!!!'); inp.value=''; inp.blur(); } });
   ['pointerdown','touchstart','wheel'].forEach(k=>box.addEventListener(k,e=>e.stopPropagation(),{passive:true}));
   (document.querySelector('#hud .bottom')||document.body).prepend(box);
@@ -70,8 +74,8 @@ const Yell=(()=>{
     const show=!active&&S.mode==='scene'&&!S.busy&&world.yellSpot&&world.yellSpot(m.x,m.z)&&!m.walking;
     if(show&&box.hidden){
       const first=count===0;
-      q.textContent=first?'소리 지를까요?':'무엇을 외칠까요?';
-      chips.hidden=first; form.hidden=first; go.hidden=!first;
+      q.textContent='소리 지를까요?';
+      chips.hidden=first; form.hidden=first; go.hidden=false;
     }
     box.hidden=!show;
   }
