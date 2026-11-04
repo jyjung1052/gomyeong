@@ -1,5 +1,5 @@
 /* ---- 우레: 끝이 보이지 않는 대나무숲. 안쪽 깊이 작은 연못과 그 둘레의 둥근 데크에서 마음껏 소리친다 ---- */
-const TH_POND=3.6, TH_DECK=6.4, TH_DECKY=.32, TH_R=52, TH_PATHZ=TH_R-4;
+const TH_POND=2.2, TH_DECK=4.4, TH_DECKY=.32, TH_R=52, TH_PATHZ=TH_R-4;   // 1인용이라 연못과 데크를 작게
 function thunderH(x,z){
   const r=Math.hypot(x,z);
   if(r<TH_POND) return -.6;                                        // 연못 바닥
@@ -75,10 +75,11 @@ function buildThunder(){
   const stones=[]; for(let i=0;i<26;i++){ const a=i/26*TAU+R()*.1, r=TH_POND-.05, s=.25+R()*.25; stones.push({x:Math.cos(a)*r,y:-.02,z:Math.sin(a)*r,sx:s*1.3,sy:s*.6,sz:s,ry:R()*6,c:choice(R,['#6d7360','#5d6452','#7a7d68'])}); }
   const keep=m=>{ m.userData.noCut=true; return m; };
   g.add(instances(rockGeo(),keep(VC({vertexColors:false})),stones));
-  const pads=[]; for(let i=0;i<9;i++){ const a=R()*TAU, r=.8+R()*2.2; pads.push({x:Math.cos(a)*r,y:.0,z:Math.sin(a)*r,sx:.3+R()*.25,sy:1,sz:.3+R()*.25,ry:R()*3,c:choice(R,['#3f6a48','#4a7a50'])}); }
+  const pads=[]; for(let i=0;i<7;i++){ const a=R()*TAU, r=.5+R()*(TH_POND-.8); pads.push({x:Math.cos(a)*r,y:.0,z:Math.sin(a)*r,sx:.3+R()*.25,sy:1,sz:.3+R()*.25,ry:R()*3,c:choice(R,['#3f6a48','#4a7a50'])}); }
   const padG=new THREE.CircleGeometry(1,16); padG.rotateX(-Math.PI/2); g.add(instances(padG,keep(M('#ffffff',{shininess:6})),pads));
 
-  /* 연못을 빙 두른 둥근 나무 데크와 난간(들어오는 길 쪽은 열려 있다) */
+  /* 연못을 빙 두른 둥근 나무 데크와, 연못 쪽 가장자리를 따라 선 난간(들어오는 길 쪽은 열려 있다) */
+  const RAIL=TH_POND+.14;
   const planks=[], NP=72;
   for(let i=0;i<NP;i++){
     const a=i/NP*TAU, rm=(TH_POND+TH_DECK)/2;
@@ -90,10 +91,10 @@ function buildThunder(){
   const posts=[], railM=keep(M('#7a5a3c',{shininess:8}));
   for(let i=0;i<28;i++){
     const a=i/28*TAU; if(Math.abs(angDiff(a,Math.PI/2))<.32) continue;   // 길 쪽(+z) 입구
-    posts.push({x:Math.cos(a)*(TH_DECK-.12),y:TH_DECKY+.45,z:Math.sin(a)*(TH_DECK-.12)});
+    posts.push({x:Math.cos(a)*RAIL,y:TH_DECKY+.45,z:Math.sin(a)*RAIL});
   }
   g.add(instances(new THREE.CylinderGeometry(.05,.06,.9,8),railM,posts));
-  const rail=new THREE.Mesh(new THREE.TorusGeometry(TH_DECK-.12,.035,6,96,TAU-.64),railM); rail.rotation.x=-Math.PI/2; rail.rotation.z=-Math.PI/2+.32; rail.position.y=TH_DECKY+.88; g.add(rail);
+  const rail=new THREE.Mesh(new THREE.TorusGeometry(RAIL,.035,6,96,TAU-.64),railM); rail.rotation.x=-Math.PI/2; rail.rotation.z=-Math.PI/2+.32; rail.position.y=TH_DECKY+.88; g.add(rail);
   /* 데크로 이어지는 징검돌 길 */
   const steps=[]; for(let z=TH_DECK+.8;z<TH_PATHZ;z+=1.15+R()*.3){ const x=.5*Math.sin(z*.2)+(R()-.5)*.4, s=.45+R()*.15; steps.push({x,y:thunderH(x,z)+.02,z,sx:s*1.2,sy:.12,sz:s,ry:R()*3,c:choice(R,['#8a8778','#9a9686','#7b796c'])}); }
   g.add(instances(rockGeo(),keep(VC({vertexColors:false})),steps));
@@ -107,6 +108,14 @@ function buildThunder(){
     n++; const s=.85+R()*.35;
     culms[n%4].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
     if(rr<TH_R+2) avoid.push({x,z,r:.16*s});
+  }
+  /* 연못 둘레: 데크 바로 바깥에 대나무를 한 겹 더 빽빽이 두른다(들어오는 길만 비운다) */
+  for(let n=0;n<420;n++){
+    const a=R()*TAU, rr=TH_DECK+.6+Math.pow(R(),.8)*1.6, x=Math.cos(a)*rr, z=Math.sin(a)*rr;
+    if(z>0&&z<TH_PATHZ+6&&Math.abs(x-.5*Math.sin(z*.2))<1.9) continue;
+    const s=.85+R()*.35;
+    culms[n%4].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
+    avoid.push({x,z,r:.16*s});
   }
   const bamMat=new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:18,specular:0x223322});
   /* 바람에 대나무가 휘청인다: 높이의 제곱만큼 흔들리고, 소리칠 때(GUST)는 크게 출렁인다 */
@@ -156,7 +165,7 @@ function buildThunder(){
   return {group:g,fog:{c:0xb3c2a6,n:6,f:58},bg:0xb3c2a6,bounds:{circle:[0,0,TH_R]},avoid,
     spawn:{x:0,z:TH_PATHZ},spawnJ:[2,3],groundH:thunderH,waterY:-1000,pitch:.24,pitchSit:.14,
     /* 데크 위(연못 둘레)에 서 있으면 소리칠 수 있다 */
-    yellSpot(x,z){ const r=Math.hypot(x,z); return r>TH_POND+.2&&r<TH_DECK-.1; },
+    yellSpot(x,z){ const r=Math.hypot(x,z); return r>RAIL+.16&&r<TH_DECK-.1; },
     /* 소리치면 대숲이 크게 출렁이고 새들이 날아오른다 */
     shout(power){
       gustT=4.5*(power||1);
