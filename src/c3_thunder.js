@@ -1,8 +1,8 @@
 /* ---- 우레: 끝이 보이지 않는 대나무숲. 안쪽 깊이 작은 연못과 그 둘레의 둥근 데크에서 마음껏 소리친다 ---- */
 const TH_POND=2.2, TH_DECK=4.4, TH_DECKY=.32, TH_R=52, TH_PATHZ=TH_R-4;   // 1인용이라 연못과 데크를 작게
-/* 연못 10개: 가운데 하나 + 바깥으로 흩어진 아홉 개. 길(스폰→가운데)과 겹치지 않게 방향을 골랐다 */
+/* 연못 8개: 가운데 하나 + 바깥으로 흩어진 일곱 개. 길(스폰→가운데)과 겹치지 않게 방향을 골랐다 */
 const TH_PONDS=[{x:0,z:0}];
-for(let i=0;i<9;i++){ const a=(140+i*32.5)*Math.PI/180, r=i%2?32:20; TH_PONDS.push({x:Math.cos(a)*r,z:Math.sin(a)*r}); }
+for(let i=0;i<7;i++){ const a=(140+i*260/6)*Math.PI/180, r=i%2?32:20; TH_PONDS.push({x:Math.cos(a)*r,z:Math.sin(a)*r}); }
 const TH_SPOKES=TH_PONDS.slice(1).map(p=>[0,0,p.x,p.z]);            // 가운데 연못에서 각 연못으로 가는 샛길
 function pondDist(x,z){ let d=1e9; for(const p of TH_PONDS) d=Math.min(d,Math.hypot(x-p.x,z-p.z)); return d; }
 function thunderH(x,z){
@@ -22,7 +22,7 @@ function onLane(x,z){
 /* 대나무 한 그루: 마디가 있는 곧은 줄기, 위쪽에 가는 가지와 길쭉한 잎 다발 */
 function bambooGeo(seed){
   const R=rng(seed), pos=[], col=[], nor=[], idx=[];
-  const H=11+R()*5, r0=.075+R()*.035, N=7, segs=9;
+  const H=11+R()*5, r0=.09+R()*.04, N=7, segs=9;
   const C1=new THREE.Color('#5f8a3c'), C2=new THREE.Color('#7da14a'), NODE=new THREE.Color('#c8c79a'), LEAF=new THREE.Color('#4d7a2e'), LEAF2=new THREE.Color('#79a845'), c=new THREE.Color();
   const lean=(R()-.5)*.5, la=R()*TAU, bx=y=>Math.cos(la)*lean*(y/H)*(y/H), bz=y=>Math.sin(la)*lean*(y/H)*(y/H);
   /* 줄기: 마디마다 살짝 부풀고 연한 띠가 있다 */
@@ -112,7 +112,7 @@ function buildThunder(){
   /* 대나무: 길과 샛길, 연못 둘레만 비우고 사방으로 빽빽하게. 멀리는 안개 속으로 끝없이 */
   const clear=(x,z)=>pondDist(x,z)<TH_DECK+1.6||onLane(x,z);
   const culms=[[],[],[],[]], avoid=TH_PONDS.map(p=>({x:p.x,z:p.z,r:TH_POND+.15}));
-  for(let n=0,tries=0;n<1800&&tries<30000;tries++){
+  for(let n=0,tries=0;n<2600&&tries<40000;tries++){
     const near=R()<.7, rr=near?Math.sqrt(R())*TH_R+2:TH_R+Math.pow(R(),.7)*55, a=R()*TAU, x=Math.cos(a)*rr, z=Math.sin(a)*rr;
     if(clear(x,z)) continue;
     n++; const s=.85+R()*.35;
@@ -129,7 +129,7 @@ function buildThunder(){
       avoid.push({x,z,r:.16*s});
     }
   };
-  TH_PONDS.forEach(P=>{ ringCulms(P,TH_DECK+.6,1.6,150); ringCulms(P,TH_DECK+2.2,1.8,90); });
+  TH_PONDS.forEach(P=>{ ringCulms(P,TH_DECK+.6,1.6,90); ringCulms(P,TH_DECK+2.2,1.8,50); });
   const bamMat=new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:18,specular:0x223322});
   /* 바람에 대나무가 휘청인다: 높이의 제곱만큼 흔들리고, 소리칠 때(GUST)는 크게 출렁인다 */
   bamMat.onBeforeCompile=sh=>{

@@ -36,8 +36,8 @@ T.S.mode='hub'; T.goDoor(2); T.update(.016);
 })();
 /* 우레: 데크에 서서 소리치기 한 번을 끝까지 */
 { const w=T.BUILD.thunder(); T.activate(w); T.S.mode='scene'; T.S.realm={id:'thunder',color:'#d4b04a'};
-  const m=T.S.me; m.x=5; m.z=0; m.tx=5; m.tz=0; m.sitting=false;
-  if(!w.yellSpot(5,0)||w.yellSpot(0,20)) throw new Error('yellSpot');
+  const m=T.S.me; m.x=3.2; m.z=0; m.tx=3.2; m.tz=0; m.sitting=false;
+  if(!w.yellSpot(3.2,0)||w.yellSpot(0,20)||w.yellSpot(0,0)) throw new Error('yellSpot');
   T.update(.05); T.Yell.start('시베리아에서 귤이나 까라!!!'); if(!T.Yell.busy()) throw new Error('yell not started');
   let k=0; while(T.Yell.busy()&&k<400){ T.update(.05); k++; }
   if(T.Yell.busy()) throw new Error('yell never ended');
