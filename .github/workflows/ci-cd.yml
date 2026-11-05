@@ -76,5 +76,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           report(){ tail -n 15 "$1" | tr -d '\r' | sed 's/\x1b\[[0-9;]*m//g' | awk 'NF' | while IFS= read -r l; do echo "::$2::$l"; done; }
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || unset CLOUDFLARE_ACCOUNT_ID   # 비어 있으면 토큰에서 계정을 찾게 둔다
           npx --yes wrangler@3 pages project create innerpeace --production-branch=main > create.log 2>&1 || { report create.log warning; }
           if npx --yes wrangler@3 pages deploy dist --project-name=innerpeace --branch=main --commit-dirty=true > deploy.log 2>&1; then report deploy.log notice; else report deploy.log error; exit 1; fi
