@@ -31,9 +31,10 @@ const Yell=(()=>{
     const m=S.me; if(m.sitting) setSit(false);
     m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false;
     try{ if(window.speechSynthesis){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); } }catch(e){}   // 아이폰: 손가락으로 누른 순간에 말소리 길을 열어 둔다
-    const build=1.4+Math.random()*.7, dur=Math.min(5,2.3+text.length*.07+Math.random()*.8);
+    const build=1.4+Math.random()*.7; let dur=Math.min(5,2.3+text.length*.07+Math.random()*.8);
+    const real=Sound.shout(build,dur,!pureScream(text));   // 녹음 고함이면 그 길이에 몸짓을 맞춘다
+    if(real&&pureScream(text)) dur=Math.max(1.1,real+.3);
     active={t0:S.t,build,dur,text,fired:false};
-    Sound.shout(build,dur,!pureScream(text));
     count++; try{ localStorage.setItem('gomyeong3d_yells',String(count)); }catch(e){}
     box.hidden=true; touch();
   }

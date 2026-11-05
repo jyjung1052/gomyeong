@@ -65,11 +65,11 @@ const Sound=(()=>{
   };
 
   /* 녹음한 소리 파일: 한 번 받아 두고, 장면에 들어갈 때마다 이음매 없이 반복한다 */
-  const bufCache={};
+  const bufCache={}, bufReady={};
   function loadBuf(url){
     if(!bufCache[url]) bufCache[url]=fetch(url).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(ab=>new Promise((ok,no)=>ctx.decodeAudioData(ab,ok,no)));
-    bufCache[url].catch(()=>{ delete bufCache[url]; });
+    bufCache[url].then(b=>{ bufReady[url]=b; }).catch(()=>{ delete bufCache[url]; });
     return bufCache[url];
   }
   function sampleLoop(sc,url,g,onReady){
@@ -382,6 +382,7 @@ const Sound=(()=>{
   }
   function enter(name){
     if(!ctx) return;
+    if(name==='thunder') YELL_S.concat(YELL_G).forEach(u=>loadBuf(u).catch(()=>{}));   // 고함 녹음을 미리 받아 둔다
     if(cur) fadeOut(cur);
     const bus=ctx.createGain(); bus.gain.value=0; bus.connect(master);
     const wet=ctx.createGain(); wet.gain.value=.6;
@@ -452,10 +453,29 @@ const Sound=(()=>{
     o1.connect(sh); sh.connect(lp); lp.connect(f1); f1.connect(trem); trem.connect(out); lp.connect(out); out.connect(sc.bus);
     [o1,lfo].forEach(n=>{ n.start(t0); n.stop(t0+dur+.1); });
   }
-  /* 한 번의 고함을 무작위로 짠다: 한 번에 길게, 또는 두세 번 끊어서 */
+  /* 미리 만들어 둔 사람 목소리 고함(거칠게 찢어지는 '아악!', 대숲 울림 포함)과 이를 악문 '으으읍' */
+  const YELL_S=[0,1,2,3,4,5].map(i=>'snd/yell/scream'+i+'.m4a'), YELL_G=[0,1,2].map(i=>'snd/yell/strain'+i+'.m4a');
+  const YELL_TAIL=1.6;                                   // 파일 끝의 울림 길이
+  let lastYell=-1;
+  function playBuf(sc,buf,when,gain,rate,fadeAt){
+    const s=ctx.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate||1;
+    const o=ctx.createGain(); o.gain.setValueAtTime(gain,when);
+    if(fadeAt){ o.gain.setValueAtTime(gain,fadeAt-.12); o.gain.linearRampToValueAtTime(0,fadeAt); }
+    s.connect(o); o.connect(sc.bus); s.start(when,.04); if(fadeAt) s.stop(fadeAt+.05);
+  }
+  /* 고함: 녹음이 준비돼 있으면 녹음으로, 아니면 흉내 낸 목소리로. 실제 고함 길이(초)를 돌려준다 */
   function shout(buildDur,dur,soft){
-    if(!ctx||!cur) return;
+    if(!ctx||!cur) return null;
     const sc=cur, t0=ctx.currentTime;
+    YELL_S.concat(YELL_G).forEach(u=>{ if(!bufReady[u]) loadBuf(u).catch(()=>{}); });
+    let k=Math.floor(Math.random()*YELL_S.length); if(k===lastYell) k=(k+1)%YELL_S.length;
+    const sb=bufReady[YELL_S[k]], gb=bufReady[YELL_G[Math.floor(Math.random()*YELL_G.length)]];
+    if(sb&&gb){
+      lastYell=k; const rate=rnd(.95,1.06);
+      playBuf(sc,gb,t0,soft?.5:.85,rnd(.94,1.06),t0+buildDur+.05);
+      playBuf(sc,sb,t0+buildDur,soft?.4:1.0,rate);
+      return (sb.duration-YELL_TAIL)/rate;
+    }
     growl(sc,t0,buildDur);
     const pats=[[['eu',0],['a',.18]],[['a',0]],[['eu',0],['a',.12],['o',.85]],[['ya',0],['a',.2]],[['i',0],['a',.25]]];
     const parts=Math.random()<.45?1:(Math.random()<.6?2:3);
@@ -467,6 +487,7 @@ const Sound=(()=>{
         att:rnd(.04,.12),cut:Math.random()<.6,gain:(soft?.2:.4)*rnd(.85,1.15),echo:rnd(.5,.9)});
       at+=d+rnd(.08,.22);
     });
+    return null;
   }
   return {
     init, enter, setSeated, event, shout,
