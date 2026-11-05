@@ -39,6 +39,7 @@ const Smash=(()=>{
       if(u>=1){ active=null; figure.smash(S.t,null); rest=1.2; }
     }
     const show=!active&&!rest&&!S.busy&&spot()>=0&&!m.walking;
+    if(show){ const f=world.benchFace(spot()); m.heading+=angDiff(m.heading,f.heading)*(1-Math.exp(-8*dt)); }   // 서면 작업대를 바라본다
     box.hidden=!show;
   }
   function pose(fig){ if(active) fig.smash(S.t,Math.min(1,(S.t-active.t0)/active.dur)); }

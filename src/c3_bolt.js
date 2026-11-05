@@ -122,7 +122,7 @@ function buildBolt(){
   /* 작업대: 두꺼운 나무 상판, 쇠 모서리, 흩어진 파편 자국 */
   const wood=M('#6a4a30',{shininess:6}), woodDk=M('#4a3220',{shininess:4}), iron=M('#2a2a2c',{shininess:40});
   const benches=BO_BENCHES.map((b,i)=>{
-    const bg=new THREE.Group(); bg.position.set(b.x,boltH(b.x,b.z),b.z); bg.rotation.y=b.ry+Math.PI; g.add(bg);
+    const bg=new THREE.Group(); bg.position.set(b.x,boltH(b.x,b.z),b.z); bg.rotation.y=b.ry+Math.PI; g.add(bg); bg.userData.spot={x:b.sx,z:b.sz};
     bg.add(mesh(new THREE.BoxGeometry(1.7,.14,.9),wood,0,.84,0));
     [-.75,.75].forEach(x=>[-.36,.36].forEach(z=>bg.add(mesh(new THREE.BoxGeometry(.12,.8,.12),woodDk,x,.4,z))));
     bg.add(mesh(new THREE.BoxGeometry(1.5,.06,.06),woodDk,0,.25,.36)); bg.add(mesh(new THREE.BoxGeometry(1.5,.06,.06),woodDk,0,.25,-.36));
@@ -171,7 +171,7 @@ function buildBolt(){
   }
   let cloudFlash=0, nextFar=4+R()*5;
   let count=0;
-  return {group:g,fog:{c:0xc2b9b4,n:40,f:230},bg:0xc2b9b4,bounds:{circle:[0,0,BO_R]},
+  return {group:g,fog:{c:0xc2b9b4,n:40,f:230},bg:0xc2b9b4,bounds:{circle:[0,0,BO_R]},tapTargets:benches.map(st=>st.g),
     avoid:BO_BENCHES.map(b=>({x:b.x,z:b.z,r:1.05})),
     spawn:{x:0,z:BO_R-16},spawnJ:[2,2],groundH:boltH,waterY:-1000,pitch:.2,pitchSit:.12,
     /* 작업대 앞에 서 있으면 그 작업대 번호 */

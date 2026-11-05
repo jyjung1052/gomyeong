@@ -201,6 +201,8 @@ function pick(px,py){
   }else{
     meSphere.center.set(S.me.x,footPose(S.me.x,S.me.z).y+.95,S.me.z); meSphere.radius=1;
     if(ray.ray.intersectsSphere(meSphere)) return {me:true};
+    /* 작업대처럼 눌러서 고르는 물건: 그 앞 한가운데 자리로 */
+    if(world.tapTargets){ const hs=ray.intersectObjects(world.tapTargets,true); if(hs.length){ let o=hs[0].object; while(o&&o.userData.spot==null) o=o.parent; if(o) return {spot:o.userData.spot}; } }
   }
   gplane.constant=-(world.floorY||0);
   if(ray.ray.intersectPlane(gplane,hitV)) return {ground:hitV.clone()};
@@ -218,6 +220,7 @@ function onTap(px,py){
   if(r.me){ if(!dark) setSit(!S.me.sitting); return; }   // 검은 방에서는 앉지 않는다
   if(S.me.sitting) setSit(false);
   /* 검은 방: 작업대·연못 근처를 누르면 그 앞자리까지 곧장 걸어간다 */
+  if(r.spot){ walkTo(r.spot); S.me.onDeck=false; return; }
   if(r.ground&&dark&&world.snapSpot){ const p=world.snapSpot(r.ground.x,r.ground.z,S.me.x,S.me.z); if(p){ walkTo(p); S.me.onDeck=false; return; } }
   if(r.ground) walkTo(r.ground);
 }
@@ -381,7 +384,8 @@ function update(dt){
   clampMe();
   /* 데크에 발을 들이면 걸어가던 것을 멈춘다(키로 움직일 때는 그대로) */
   const onDeck=!!((world.yellSpot&&world.yellSpot(m.x,m.z))||(world.smashSpot&&world.smashSpot(m.x,m.z)>=0));
-  if(onDeck&&!m.onDeck&&!(kf||kr)){ m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false; }
+  const tgtOn=!!((world.yellSpot&&world.yellSpot(m.tx,m.tz))||(world.smashSpot&&world.smashSpot(m.tx,m.tz)>=0));   // 목적지가 그 자리 안이면 끝까지 간다
+  if(onDeck&&!m.onDeck&&!(kf||kr)&&!tgtOn){ m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false; }
   m.onDeck=onDeck;
   const P=footPose(m.x,m.z);
   m.swim=damp(m.swim||0,P.k,6,dt); m.lieK=damp(m.lieK||0,m.lie?1:0,4,dt);
