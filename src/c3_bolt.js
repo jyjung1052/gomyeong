@@ -6,7 +6,7 @@ BO_BENCHES.forEach(b=>{ const k=(BO_BENCH_R-1.35)/BO_BENCH_R; b.sx=b.x*k; b.sz=b
 function boltH(x,z){
   const r=Math.hypot(x,z);
   const rough=.35*nz(x*.09,1,z*.09)+.12*nz(x*.4,3,z*.4);
-  const rim=smooth(BO_R-8,BO_R+20,r)*(6+5*nz(x*.03,5,z*.03));   // 둘레는 바위 언덕으로 솟는다
+  const rim=smooth(BO_R+10,BO_R+40,r)*(6+5*nz(x*.03,5,z*.03));   // 둘레는 바위 언덕으로 솟는다
   return rough*smooth(4,16,r)+rim;
 }
 /* 부술 물건들: 모양·색·깨지는 소리 종류 */
@@ -97,12 +97,12 @@ function buildBolt(){
   T.setAttribute('color',new THREE.BufferAttribute(tc,3)); T.computeVertexNormals();
   g.add(new THREE.Mesh(T,VC({shininess:6})));
   /* 바위와 둘레의 주상절리 기둥 */
-  const rocks=[]; for(let i=0;i<160;i++){ const a=R()*TAU, r=6+Math.pow(R(),.6)*60, x=Math.cos(a)*r, z=Math.sin(a)*r;
+  const rocks=[]; for(let i=0;i<160;i++){ const a=R()*TAU, r=6+Math.pow(R(),.6)*75, x=Math.cos(a)*r, z=Math.sin(a)*r;
     if(BO_BENCHES.some(b=>Math.hypot(b.x-x,b.z-z)<3.2)||(Math.abs(x)<2.5&&z>8)) continue;
-    const s=r<BO_R?.2+R()*.6:.8+R()*2.4; rocks.push({x,y:boltH(x,z)-s*.2,z,sx:s*1.2,sy:s*.8,sz:s,ry:R()*6,c:choice(R,['#8a8680','#97928a','#7d7973','#a39e95'])}); }
+    const s=r<BO_R+12?.2+R()*.5:.8+R()*2.4; rocks.push({x,y:boltH(x,z)-s*.2,z,sx:s*1.2,sy:s*.8,sz:s,ry:R()*6,c:choice(R,['#8a8680','#97928a','#7d7973','#a39e95'])}); }
   g.add(instances(rockGeo(),VC({vertexColors:false}),rocks));
   /* 둘레의 둥근 바위 언덕: 부드럽게 감싼다 */
-  const big=[]; for(let i=0;i<90;i++){ const a=R()*TAU, r=BO_R+3+R()*24, x=Math.cos(a)*r, z=Math.sin(a)*r, sz=2+R()*5; big.push({x,y:boltH(x,z)-sz*.35,z,sx:sz*1.4,sy:sz*.7,sz:sz,ry:R()*6,c:choice(R,['#8f8a80','#9c968b','#857f76'])}); }
+  const big=[]; for(let i=0;i<90;i++){ const a=R()*TAU, r=BO_R+14+R()*26, x=Math.cos(a)*r, z=Math.sin(a)*r, sz=2+R()*5; big.push({x,y:boltH(x,z)-sz*.35,z,sx:sz*1.4,sy:sz*.7,sz:sz,ry:R()*6,c:choice(R,['#8f8a80','#9c968b','#857f76'])}); }
   g.add(instances(rockGeo(),VC({vertexColors:false}),big));
   /* 먼 산 그림자 */
   for(let i=0;i<22;i++){ const a=i/22*TAU+R()*.15, r=160+R()*60, h=14+R()*26; const cg=new THREE.ConeGeometry(1,1,9,3); const cp=cg.attributes.position; for(let k=0;k<cp.count;k++){ const y=cp.getY(k); if(y<.49){ const f=1+.35*nz(cp.getX(k)*3,i,cp.getZ(k)*3); cp.setX(k,cp.getX(k)*f); cp.setZ(k,cp.getZ(k)*f); cp.setY(k,y+.12*nz(cp.getX(k)*4,i+2,cp.getZ(k)*4)); } } cg.computeVertexNormals();
@@ -173,7 +173,7 @@ function buildBolt(){
   let count=0;
   return {group:g,fog:{c:0xc2b9b4,n:40,f:230},bg:0xc2b9b4,bounds:{circle:[0,0,BO_R]},
     avoid:BO_BENCHES.map(b=>({x:b.x,z:b.z,r:1.05})),
-    spawn:{x:0,z:BO_R-6},spawnJ:[2,2],groundH:boltH,waterY:-1000,pitch:.2,pitchSit:.12,
+    spawn:{x:0,z:BO_R-16},spawnJ:[2,2],groundH:boltH,waterY:-1000,pitch:.2,pitchSit:.12,
     /* 작업대 앞에 서 있으면 그 작업대 번호 */
     /* '깨부수기' 버튼: 가장 가까운 작업대 앞자리 */
     nearSpot(x,z){ let b=BO_BENCHES[0], d=1e9; BO_BENCHES.forEach(q=>{ const e=Math.hypot(x-q.sx,z-q.sz); if(e<d){ d=e; b=q; } }); return {x:b.sx,z:b.sz}; },
