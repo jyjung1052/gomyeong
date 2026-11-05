@@ -1,5 +1,5 @@
 /* 중계 서버가 받는 값 검사: 모양이 틀리면 버린다 */
-export const SCENES=['hub','sea','forest','lake','valley','mountain','cave','rain','field','thunder','bolt'];
+export const SCENES=['hub','sea','forest','lake','valley','mountain','cave','rain','field','thunder','bolt','spout'];
 const num=(v,lo,hi)=>typeof v==='number'&&isFinite(v)?Math.max(lo,Math.min(hi,v)):null;
 export function sanitize(d){
   if(!d||typeof d!=='object'||Array.isArray(d)) return null;

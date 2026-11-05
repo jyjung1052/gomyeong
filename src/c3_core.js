@@ -21,7 +21,7 @@ const REALMS=[
   /* 검은 방: 하얀 방 맞은편 반원. 쌓인 마음을 몸으로 터뜨리는 곳(아직 짓는 중) */
   {id:'thunder',name:'우레',short:'마음껏 소리치기',line:'대나무숲에 소리치기',color:'#d4b04a',dark:true},
   {id:'bolt',name:'벼락',short:'와장창 깨기',line:'접시와 유리병 깨기',color:'#f0e070',dark:true},
-  {id:'spout',name:'용오름',short:'허공에 발차기',line:'이불 위 하이킥',color:'#6f8fe0',dark:true,soon:true},
+  {id:'spout',name:'용오름',short:'이불킥',line:'구름 위 침대에서 이불킥',color:'#6f8fe0',dark:true},
   {id:'hail',name:'우박',short:'두드리고 때리기',line:'베개 두드리기',color:'#b9c8d8',dark:true,soon:true},
   {id:'quake',name:'지진',short:'쿵쿵 발 구르기',line:'발 굴러 땅 흔들기',color:'#b0824e',dark:true,soon:true},
   {id:'avalanche',name:'눈사태',short:'와르르 무너뜨리기',line:'쌓인 것 무너뜨리기',color:'#dce6f0',dark:true,soon:true},
@@ -248,8 +248,20 @@ function buildFigure(){
     eyesOpen.visible=u<.5; eyesClosed.visible=u>=.5;
     mouth.visible=open>.15; mouth.scale.set(1.2,.4+1.2*open,.5);
   };
+  /* 이불킥: 누운 채 두 다리를 번갈아 허공으로 차고, 고개를 도리도리, 주먹으로 침대를 쾅쾅. o=null이면 원래대로 */
+  const kick=(t,o)=>{
+    if(!o){ legL.rotation.set(0,0,0); legR.rotation.set(0,0,0); armL.rotation.set(0,0,0); armR.rotation.set(0,0,0); head.rotation.set(0,0,0); upper.rotation.set(0,0,0);
+      mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
+    legL.rotation.set(-o.hl*1.5,0,.08); legR.rotation.set(-o.hr*1.5,0,-.08);
+    const pound=Math.abs(Math.sin(t*9))*o.k;
+    armL.rotation.set(-.15-.5*pound,0,.35); armR.rotation.set(-.15-.5*Math.abs(Math.cos(t*9))*o.k,0,-.35);
+    head.rotation.set(-.1,Math.sin(t*13)*.45*o.k,0); upper.rotation.set(0,Math.sin(t*6.5)*.12*o.k,0);
+    eyesOpen.visible=false; eyesClosed.visible=true;
+    brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066;
+    mouth.visible=o.k>.2; mouth.scale.set(1.2,.5+o.k*.9,.5);
+  };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell, smash,
+    root, shadow, flats:[shadow,halo,ring], yell, smash, kick,
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
       legsStand.visible=!sit; legsSit.visible=sit;

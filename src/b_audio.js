@@ -328,6 +328,12 @@ const Sound=(()=>{
       };
       tick();
     },
+    spout(sc){
+      /* 구름 위 밤: 높은 곳의 부드러운 바람과 아주 조용한 별빛 화음 */
+      const bp=mk.filt('bandpass',420,.5); mk.bed(sc,noiseB,[bp],.12); mk.lfo(sc,.04,140,bp.frequency);
+      [261.63,329.63,392,523.25].forEach((f,i)=>{ const o=mk.osc(sc,'sine',f), g=mk.gain(.012); o.connect(g); g.connect(sc.bus); mk.lfo(sc,.03+i*.011,.008,g.gain); });
+      mk.every(sc,6,14,()=>tone(sc,rnd(1400,2600),rnd(1400,2600),rnd(.6,1.2),rnd(.006,.014),'sine',.9,rnd(-.8,.8)));   // 별이 반짝이는 소리
+    },
     bolt(sc){
       /* 바위 고원: 낮게 웅웅대는 바람과, 먹구름 속에서 끊임없이 구르는 먼 천둥 */
       const bp=mk.filt('bandpass',260,.7); mk.bed(sc,noiseB,[bp],.2); mk.lfo(sc,.05,90,bp.frequency);
@@ -504,6 +510,24 @@ const Sound=(()=>{
     const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(pk*1.4,t+.01); og.gain.exponentialRampToValueAtTime(.0001,t+.9);
     o.connect(og); og.connect(sc.bus); o.start(t); o.stop(t+1);
   }
+  /* 이불킥: 이불이 펄럭이며 '펑!' 하고 매트리스가 울린다 */
+  function kick(power){
+    if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime, p=Math.min(1.5,power||1);
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(rnd(95,120),t); o.frequency.exponentialRampToValueAtTime(42,t+.18);
+    const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(.45*p,t+.006); og.gain.exponentialRampToValueAtTime(.0001,t+.3);
+    o.connect(og); og.connect(sc.bus); o.start(t); o.stop(t+.35);
+    const s=ctx.createBufferSource(); s.buffer=noiseW; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.setValueAtTime(rnd(600,900),t); bp.frequency.exponentialRampToValueAtTime(rnd(250,350),t+.2); bp.Q.value=.8;
+    const sg=ctx.createGain(); sg.gain.setValueAtTime(0,t); sg.gain.linearRampToValueAtTime(.32*p,t+.015); sg.gain.exponentialRampToValueAtTime(.0001,t+.25);
+    s.connect(bp); bp.connect(sg); sg.connect(sc.bus); s.start(t,rnd(0,2)); s.stop(t+.3);
+  }
+  /* 용오름: 바람이 휘감아 하늘로 솟구치는 소리 */
+  function whoosh(){
+    if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime;
+    const s=ctx.createBufferSource(); s.buffer=noiseW; s.loop=true; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.2;
+    bp.frequency.setValueAtTime(180,t); bp.frequency.exponentialRampToValueAtTime(2600,t+2.2);
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35,t+.5); g.gain.exponentialRampToValueAtTime(.0001,t+3.2);
+    s.connect(bp); bp.connect(g); g.connect(sc.bus); const w=ctx.createGain(); w.gain.value=.6; g.connect(w); w.connect(sc.wet); s.start(t,rnd(0,2)); s.stop(t+3.4);
+  }
   function smash(kind){
     if(!ctx||!cur) return;
     const sc=cur, t=ctx.currentTime, later=(ms,f)=>sc.timers.push(setTimeout(()=>{ if(!sc.dead) f(); },ms));
@@ -525,7 +549,7 @@ const Sound=(()=>{
     }
   }
   return {
-    init, enter, setSeated, event, shout, smash,
+    init, enter, setSeated, event, shout, smash, kick, whoosh,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }

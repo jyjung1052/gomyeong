@@ -3,7 +3,7 @@ const Smash=(()=>{
   const dayKey=()=>{ const d=new Date(); return 'gomyeong3d_smash_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
   let today=0; try{ today=+(localStorage.getItem(dayKey())||0); }catch(e){}
   let active=null, sel=null, shakeT=0, rest=0;   // rest: 부순 뒤 파편이 흩어지는 걸 볼 수 있게 잠깐 상자를 숨긴다
-  const box=document.createElement('div'); box.id='smashBox'; box.className='yellbox'; box.hidden=true;
+  const box=document.createElement('div'); box.id='smashBox'; box.className='yellbox actbox'; box.hidden=true;
   box.innerHTML='<div class="yhead"><p class="yq">부숴 볼까요?</p><p class="ycount"></p></div><div class="ych"></div><form class="yrow"><input maxlength="12" placeholder="이름표 (안 써도 돼요)" aria-label="물건에 붙일 이름"><button class="pill sit ygo" type="submit">네, 부술래요!</button></form>';
   const cnt=box.querySelector('.ycount'), chips=box.querySelector('.ych'), form=box.querySelector('.yrow'), inp=form.querySelector('input'), go=box.querySelector('.ygo');
   SMASH_KINDS.forEach(k=>{ const b=document.createElement('button'); b.type='button'; b.className='pill ychip'; b.textContent=k.name; b.dataset.k=k.id;
