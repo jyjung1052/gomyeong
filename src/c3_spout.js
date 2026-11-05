@@ -89,7 +89,7 @@ function buildSpout(){
     for(let k=0;k<qp.count;k++){
       const x=base[k*3], z=base[k*3+2];
       let y=base[k*3+1]+(occ?.3*Math.exp(-((x/.34)**2))*(Math.abs(x)<.6?1:0):0);   // 누운 몸 위로 볼록
-      [[-.13,hl],[.13,hr]].forEach(([lx,h])=>{ if(h<=.01) return; const fz=.72-h*.95, d=((x-lx)/.3)**2+((z-fz)/.4)**2; y+=h*1.0*Math.exp(-d);   // 발이 올라간 자리를 따라 이불이 솟는다 });
+      [[-.13,hl],[.13,hr]].forEach(([lx,h])=>{ if(h<=.01) return; const fz=.72-h*.95, d=((x-lx)/.3)**2+((z-fz)/.4)**2; y+=h*1.0*Math.exp(-d); /* 발이 올라간 자리를 따라 이불이 솟는다 */ });
       qp.setY(k,y);
     }
     qp.needsUpdate=true; bd.qg.computeVertexNormals();
