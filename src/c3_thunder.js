@@ -192,6 +192,9 @@ function buildThunder(){
     /* '소리 지르기' 버튼: 가장 가까운 연못 데크 위, 내 쪽에서 가까운 자리 */
     nearSpot(x,z){ let P=TH_PONDS[0], d=1e9; TH_PONDS.forEach(p=>{ const e=Math.hypot(x-p.x,z-p.z); if(e<d){ d=e; P=p; } });
       const a=Math.atan2(z-P.z,x-P.x), r=(RAIL+TH_DECK)/2+.3; return {x:P.x+Math.cos(a)*r,z:P.z+Math.sin(a)*r}; },
+    /* 연못이나 데크 근처를 누르면 그 연못 데크의 내 쪽 자리 */
+    snapSpot(x,z,mx,mz){ const P=TH_PONDS.find(p=>Math.hypot(x-p.x,z-p.z)<TH_DECK+1.5); if(!P) return null;
+      const a=Math.atan2(mz-P.z,mx-P.x), r=(RAIL+TH_DECK)/2+.3; return {x:P.x+Math.cos(a)*r,z:P.z+Math.sin(a)*r}; },
     yellSpot(x,z){ return TH_PONDS.some(P=>{ const r=Math.hypot(x-P.x,z-P.z); return r>TH_POND&&r<TH_DECK; }); },   // 난간에 붙어 서도 데크 위면 소리칠 수 있다
     /* 소리치면 대숲이 크게 출렁이고 새들이 날아오른다 */
     shout(power,x,z){

@@ -103,6 +103,7 @@ function syncHud(){
   if(!inScene){ el.breathText.classList.remove('on'); el.hud.classList.remove('calm'); S.calm=false; }
 }
 function setSit(v){
+  if(v&&S.realm&&S.realm.dark&&S.mode==='scene') return;   // 검은 방에서는 앉기 없음
   const m=S.me;
   if(v===m.sitting) return;
   if(v&&footPose(m.x,m.z).dep>.7){ el.sitBtn.textContent='물이 깊어요'; setTimeout(()=>{ el.sitBtn.textContent=S.me.sitting?'일어나기':'여기 앉기'; },1400); return; }
@@ -213,8 +214,11 @@ function onTap(px,py){
     if(r.door!=null) goDoor(r.door); else if(r.ground) walkTo(r.ground);
     return;
   }
-  if(r.me){ setSit(!S.me.sitting); return; }
+  const dark=S.realm&&S.realm.dark;
+  if(r.me){ if(!dark) setSit(!S.me.sitting); return; }   // 검은 방에서는 앉지 않는다
   if(S.me.sitting) setSit(false);
+  /* 검은 방: 작업대·연못 근처를 누르면 그 앞자리까지 곧장 걸어간다 */
+  if(r.ground&&dark&&world.snapSpot){ const p=world.snapSpot(r.ground.x,r.ground.z,S.me.x,S.me.z); if(p){ walkTo(p); S.me.onDeck=false; return; } }
   if(r.ground) walkTo(r.ground);
 }
 let ptr=null;

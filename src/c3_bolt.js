@@ -177,6 +177,8 @@ function buildBolt(){
     /* 작업대 앞에 서 있으면 그 작업대 번호 */
     /* '깨부수기' 버튼: 가장 가까운 작업대 앞자리 */
     nearSpot(x,z){ let b=BO_BENCHES[0], d=1e9; BO_BENCHES.forEach(q=>{ const e=Math.hypot(x-q.sx,z-q.sz); if(e<d){ d=e; b=q; } }); return {x:b.sx,z:b.sz}; },
+    /* 작업대 가까이(4m 안)를 누르면 그 작업대 앞자리 */
+    snapSpot(x,z){ let b=null, d=4; BO_BENCHES.forEach(q=>{ const e=Math.min(Math.hypot(x-q.x,z-q.z),Math.hypot(x-q.sx,z-q.sz)); if(e<d){ d=e; b=q; } }); return b?{x:b.sx,z:b.sz}:null; },
     smashSpot(x,z){ for(let i=0;i<benches.length;i++){ const b=BO_BENCHES[i]; if(Math.hypot(x-b.sx,z-b.sz)<1.15) return i; } return -1; },
     benchFace(i){ const b=BO_BENCHES[i]; return {x:b.sx,z:b.sz,heading:Math.atan2(b.x-b.sx,b.z-b.sz)}; },
     benchKind(i){ return benches[i]&&benches[i].kind; },
