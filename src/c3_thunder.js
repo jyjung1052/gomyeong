@@ -189,6 +189,9 @@ function buildThunder(){
   return {group:g,fog:{c:0xb3c2a6,n:6,f:58},bg:0xb3c2a6,bounds:{circle:[0,0,TH_R]},avoid,
     spawn:{x:0,z:TH_PATHZ},spawnJ:[2,3],groundH:thunderH,waterY:-1000,pitch:.24,pitchSit:.14,
     /* 데크 위(연못 둘레)에 서 있으면 소리칠 수 있다 */
+    /* '소리 지르기' 버튼: 가장 가까운 연못 데크 위, 내 쪽에서 가까운 자리 */
+    nearSpot(x,z){ let P=TH_PONDS[0], d=1e9; TH_PONDS.forEach(p=>{ const e=Math.hypot(x-p.x,z-p.z); if(e<d){ d=e; P=p; } });
+      const a=Math.atan2(z-P.z,x-P.x), r=(RAIL+TH_DECK)/2+.3; return {x:P.x+Math.cos(a)*r,z:P.z+Math.sin(a)*r}; },
     yellSpot(x,z){ return TH_PONDS.some(P=>{ const r=Math.hypot(x-P.x,z-P.z); return r>TH_POND&&r<TH_DECK; }); },   // 난간에 붙어 서도 데크 위면 소리칠 수 있다
     /* 소리치면 대숲이 크게 출렁이고 새들이 날아오른다 */
     shout(power,x,z){

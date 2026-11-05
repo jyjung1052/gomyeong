@@ -6,7 +6,7 @@ const keys={left:0,right:0,up:0,down:0};
 const el={
   login:$('login'),form:$('loginForm'),nick:$('nick'),hud:$('hud'),back:$('backBtn'),who:$('who'),
   name:$('placeName'),hint:$('placeHint'),mute:$('muteBtn'),vol:$('vol'),hubHint:$('hubHint'),
-  breathText:$('breathText'),sitRow:$('sitRow'),breathBtn:$('breathBtn'),sitBtn:$('sitBtn'),lieBtn:$('lieBtn'),timer:$('timer'),
+  breathText:$('breathText'),sitRow:$('sitRow'),actRow:$('actRow'),actBtn:$('actBtn'),breathBtn:$('breathBtn'),sitBtn:$('sitBtn'),lieBtn:$('lieBtn'),timer:$('timer'),
   veil:$('veil'),nav:$('doorNav')
 };
 const wait=ms=>new Promise(r=>setTimeout(r,reduce?30:ms));
@@ -93,7 +93,9 @@ function syncHud(){
   const hubMode=S.mode==='hub', inScene=S.mode==='scene';
   el.hud.hidden=S.mode==='login';
   el.hud.classList.toggle('hubmode',hubMode);
-  el.back.hidden=!inScene; el.who.hidden=!hubMode; el.sitRow.hidden=!inScene; el.hubHint.hidden=!hubMode;
+  const dark=inScene&&S.realm&&S.realm.dark;   // 검은 방: 앉기·눕기 대신 그 방에서 할 일 버튼
+  el.back.hidden=!inScene; el.who.hidden=!hubMode; el.sitRow.hidden=!inScene||dark; el.hubHint.hidden=!hubMode;
+  el.actRow.hidden=!dark; el.actBtn.textContent=dark?({thunder:'소리 지르기',bolt:'깨부수기'}[S.realm.id]||S.realm.short):'';
   el.name.textContent=hubMode?'문을 하나 고르세요':(S.realm?S.realm.name:'');
   el.hint.textContent=hubMode?'하얀 방':(S.realm?S.realm.line:'');
   el.who.textContent=S.user+' 님';
@@ -272,6 +274,8 @@ window.addEventListener('pointermove',touch,{passive:true});
 
 el.back.addEventListener('click',leaveRealm);
 el.sitBtn.addEventListener('click',()=>setSit(!S.me.sitting));
+/* 검은 방의 할 일 버튼: 가장 가까운 자리로 걸어가면 거기서 "소리 지를까요?"·"부숴 볼까요?"가 뜬다 */
+el.actBtn.addEventListener('click',()=>{ if(!world.nearSpot) return; const m=S.me; if(m.sitting) setSit(false); walkTo(world.nearSpot(m.x,m.z)); m.onDeck=false; touch(); });
 el.lieBtn.addEventListener('click',()=>setLie(!S.me.lie));
 el.breathBtn.addEventListener('click',()=>{
   S.breathOn=!S.breathOn;
@@ -408,6 +412,7 @@ function update(dt){
   const haloK=m.sitting?clamp(S.sitTime/45,0,1)*.9+.1:0;
   figure.update(S.t,m.sitting,m.walking,m.breath,S.realm?S.realm.color:'#ffffff',haloK,S.breathOn&&S.mode==='scene',m.lie);
   Yell.pose(figure); Yell.tick(dt); Smash.pose(figure); Smash.tick(dt);
+  if(S.mode==='scene'&&S.realm&&S.realm.dark) el.actRow.hidden=!$('yellBox').hidden||!$('smashBox').hidden||Yell.busy()||Smash.busy();   // 상자가 뜨면 버튼은 비켜 준다
   Together.tick(dt,S.t);
 
   /* 카메라: 캐릭터 뒤에서 따라가고, 앉으면 가까워진다 */

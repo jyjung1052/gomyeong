@@ -101,6 +101,9 @@ body{
 #smashBox .yrow{display:flex;gap:8px;width:100%;align-items:center}
 #smashBox .yrow input{flex:1;min-width:0;min-height:44px;border-radius:999px;border:1px solid var(--pill-edge);padding:0 14px;font:inherit;font-size:15px;background:rgba(255,255,255,.9)}
 #smashBox .pill.ygo{min-width:0;min-height:56px;font-size:21px;padding:10px 22px;flex:none}
+.pill.act{min-width:min(300px,78vw);min-height:64px;font-size:23px;font-weight:700;border:none;border-radius:999px;color:#2a1d0c;background:linear-gradient(#fff1bd,#f5be52 52%,#e0952e);box-shadow:0 8px 0 #8f5614,0 14px 22px rgba(0,0,0,.35),inset 0 3px 0 rgba(255,255,255,.75)}
+.pill.act:active{transform:translateY(6px);box-shadow:0 2px 0 #8f5614,0 6px 12px rgba(0,0,0,.3)}
+#actRow[hidden]{display:none}
 .yellbox .ycount{margin:-4px 0 0;color:#ffe9a8;font-size:15px}
 .yellbox .ycount[hidden]{display:none}
 .yellbox .yq{margin:0;color:#fffbe8;font-family:var(--display);font-weight:700;font-size:22px}
@@ -177,6 +180,9 @@ body{
       <button id="sitBtn" class="pill sit" type="button">여기 앉기</button>
       <button id="lieBtn" class="pill sit" type="button">눕기</button>
       <div id="timer" class="pill timer">앉은 시간 00:00</div>
+    </div>
+    <div id="actRow" class="row" hidden>
+      <button id="actBtn" class="pill sit act" type="button">소리 지르기</button>
     </div>
   </div>
 </div>
