@@ -1,5 +1,5 @@
 <meta name="claude:viewport-fit-sides" content="cover">
-<title>고요의 문 3D</title>
+<title>이너피스</title>
 <script>
 /* 새 버전이 올라갔는데 브라우저가 예전 페이지를 쥐고 있으면 스스로 새로 불러온다 */
 (function(){
@@ -40,7 +40,7 @@ body{
 #stage{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;z-index:1;outline:none}
 
 /* 이름 입력 */
-#login{
+#login{word-break:keep-all;
   position:fixed;inset:0;z-index:40;background:var(--paper);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
   padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
@@ -116,28 +116,26 @@ body{
 <canvas id="stage" aria-label="3D 명상 공간. 문을 눌러 들어가고, 바닥을 눌러 걸어가세요. 화면을 끌면 시점이 돌아가요."></canvas>
 
 <section id="login">
-  <svg viewBox="0 0 272 52" role="img" aria-label="일곱 개의 문">
-    <g fill="none" stroke="#cfcdc4" stroke-width="1.5">
-      <path d="M6 48V24a14 14 0 0 1 28 0v24"/>
-      <path d="M44 48V24a14 14 0 0 1 28 0v24"/>
-      <path d="M82 48V24a14 14 0 0 1 28 0v24"/>
-      <path d="M120 48V24a14 14 0 0 1 28 0v24"/>
-      <path d="M158 48V24a14 14 0 0 1 28 0v24"/>
-      <path d="M196 48V24a14 14 0 0 1 28 0v24"/>
-      <path d="M234 48V24a14 14 0 0 1 28 0v24"/>
-    </g>
-    <g stroke-width="2.5" stroke-linecap="round">
-      <line x1="6" x2="34" y1="48" y2="48" stroke="#4f9cc7"/>
-      <line x1="44" x2="72" y1="48" y2="48" stroke="#8fb8d9"/>
-      <line x1="82" x2="110" y1="48" y2="48" stroke="#7f86c6"/>
-      <line x1="120" x2="148" y1="48" y2="48" stroke="#3fae9f"/>
-      <line x1="158" x2="186" y1="48" y2="48" stroke="#8fa0b4"/>
-      <line x1="196" x2="224" y1="48" y2="48" stroke="#b88a52"/>
-      <line x1="234" x2="262" y1="48" y2="48" stroke="#6f8f8a"/>
-    </g>
+  <svg viewBox="0 0 310 52" role="img" aria-label="하얀 문 넷, 검은 문 넷">
+    <path d="M6 48V24a14 14 0 0 1 28 0v24" fill="none" stroke="#cfcdc4" stroke-width="1.5"/>
+    <line x1="6" x2="34" y1="48" y2="48" stroke="#4f9cc7" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M44 48V24a14 14 0 0 1 28 0v24" fill="none" stroke="#cfcdc4" stroke-width="1.5"/>
+    <line x1="44" x2="72" y1="48" y2="48" stroke="#3fae9f" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M82 48V24a14 14 0 0 1 28 0v24" fill="none" stroke="#cfcdc4" stroke-width="1.5"/>
+    <line x1="82" x2="110" y1="48" y2="48" stroke="#8fa0b4" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M120 48V24a14 14 0 0 1 28 0v24" fill="none" stroke="#cfcdc4" stroke-width="1.5"/>
+    <line x1="120" x2="148" y1="48" y2="48" stroke="#b88a52" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M158 48V24a14 14 0 0 1 28 0v24z" fill="#26241f" stroke="#26241f" stroke-width="1.5"/>
+    <line x1="158" x2="186" y1="48" y2="48" stroke="#d4b04a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M196 48V24a14 14 0 0 1 28 0v24z" fill="#26241f" stroke="#26241f" stroke-width="1.5"/>
+    <line x1="196" x2="224" y1="48" y2="48" stroke="#d4b04a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M234 48V24a14 14 0 0 1 28 0v24z" fill="#26241f" stroke="#26241f" stroke-width="1.5"/>
+    <line x1="234" x2="262" y1="48" y2="48" stroke="#d4b04a" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M272 48V24a14 14 0 0 1 28 0v24z" fill="#26241f" stroke="#26241f" stroke-width="1.5"/>
+    <line x1="272" x2="300" y1="48" y2="48" stroke="#d4b04a" stroke-width="2.5" stroke-linecap="round"/>
   </svg>
-  <h1>고요의 문</h1>
-  <p class="lede">하얀 방에서 문을 하나 고르세요. 그 너머에 앉아서 숨을 고를 수 있어요.</p>
+  <h1>이너피스</h1>
+  <p class="lede">고요히 다스리거나, 시원하게 터뜨리거나.<br>하얀 문과 검은 문 중 하나를 골라 들어가세요.</p>
   <form id="loginForm" autocomplete="off">
     <label for="nick">이름</label>
     <input id="nick" maxlength="12" placeholder="불리고 싶은 이름" autocomplete="nickname">
