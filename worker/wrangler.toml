@@ -4,7 +4,7 @@ compatibility_date = "2025-01-01"
 
 [vars]
 # 이 주소의 페이지에서 온 접속만 허용(여러 개면 쉼표로)
-ALLOWED_ORIGINS = "https://jyjung1052.github.io,https://innerpeace-46p.pages.dev,https://inner-peace-699.pages.dev"
+ALLOWED_ORIGINS = "https://jyjung1052.github.io,https://inner-peace-699.pages.dev,https://find-inner-peace.pages.dev"
 
 [[durable_objects.bindings]]
 name = "ROOM"
