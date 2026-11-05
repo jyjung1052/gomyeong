@@ -328,6 +328,13 @@ const Sound=(()=>{
       };
       tick();
     },
+    bolt(sc){
+      /* 바위 고원: 낮게 웅웅대는 바람과, 먹구름 속에서 끊임없이 구르는 먼 천둥 */
+      const bp=mk.filt('bandpass',260,.7); mk.bed(sc,noiseB,[bp],.2); mk.lfo(sc,.05,90,bp.frequency);
+      const hi=mk.bed(sc,noiseW,[mk.filt('bandpass',1400,.5)],.02); mk.lfo(sc,.13,.012,hi.gain);
+      sc.timers.push(setTimeout(()=>thunder(sc),3000));
+      mk.every(sc,14,30,()=>thunder(sc));
+    },
     thunder(sc){
       /* 대숲: 바람이 대나무 사이를 지나며 잎끼리 사사삭 스치고, 가끔 줄기끼리 '톡' 부딪힌다 */
       const gust=mk.gain(.35); gust.connect(sc.bus);
@@ -399,6 +406,7 @@ const Sound=(()=>{
   }
   function event(kind,amt){
     if(!ctx||!cur) return;
+    if(kind==='bolt_far'&&cur.name==='bolt'){ const sc=cur; sc.timers.push(setTimeout(()=>thunder(sc),rnd(600,2600))); }
     if(kind==='drip'&&cur.name==='cave'){
       tone(cur,rnd(1100,1700),rnd(700,900),.22,.16,'sine',1.1,rnd(-.3,.3));
     }
@@ -487,8 +495,37 @@ const Sound=(()=>{
     });
     return null;
   }
+  /* 와장창: 바로 머리 위에서 터지는 벼락 + 물건마다 다르게 깨지는 소리 */
+  function crack(sc,t,pk){
+    const s=ctx.createBufferSource(); s.buffer=noiseW; const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=500;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(pk,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+.5);
+    s.connect(hp); hp.connect(g); g.connect(sc.bus); const w=ctx.createGain(); w.gain.value=.8; g.connect(w); w.connect(sc.wet); s.start(t,rnd(0,2)); s.stop(t+.6);
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(90,t); o.frequency.exponentialRampToValueAtTime(32,t+.7);
+    const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(pk*1.4,t+.01); og.gain.exponentialRampToValueAtTime(.0001,t+.9);
+    o.connect(og); og.connect(sc.bus); o.start(t); o.stop(t+1);
+  }
+  function smash(kind){
+    if(!ctx||!cur) return;
+    const sc=cur, t=ctx.currentTime, later=(ms,f)=>sc.timers.push(setTimeout(()=>{ if(!sc.dead) f(); },ms));
+    crack(sc,t,.55); later(150,()=>thunder(sc));
+    const n=(a,b)=>Math.floor(rnd(a,b));
+    if(kind==='glass'){
+      hit(sc,2500,6000,.7,.5,.18);
+      for(let i=0;i<n(14,22);i++) later(rnd(10,700),()=>{ hit(sc,3500,9000,3,rnd(.05,.18),rnd(.03,.09)); if(Math.random()<.5) tone(sc,rnd(2500,6000),rnd(2400,5800),rnd(.08,.2),rnd(.02,.06),'sine',.4,rnd(-.8,.8)); });
+    }else if(kind==='ceramic'){
+      hit(sc,900,2400,.8,.6,.2);
+      for(let i=0;i<n(10,16);i++) later(rnd(20,650),()=>{ hit(sc,1500,4500,2,rnd(.06,.2),rnd(.03,.08)); if(Math.random()<.3) tone(sc,rnd(1800,3200),rnd(1700,3000),rnd(.05,.12),rnd(.02,.05),'sine',.3,rnd(-.8,.8)); });
+    }else if(kind==='tv'){
+      tone(sc,120,40,.5,.5,'sine',.5,0); hit(sc,600,1500,.6,.5,.3);
+      later(40,()=>{ for(let i=0;i<14;i++) later(rnd(0,500),()=>hit(sc,3000,8000,3,rnd(.05,.15),rnd(.03,.08))); });
+      for(let i=0;i<12;i++) later(rnd(100,900),()=>hit(sc,4000,9000,8,rnd(.03,.08),.012));   // 지지직 전기 튀는 소리
+    }else{
+      hit(sc,700,1800,1,.45,.12);
+      for(let i=0;i<n(18,28);i++) later(rnd(20,700),()=>hit(sc,1200,3800,2.5,rnd(.04,.14),rnd(.02,.05)));   // 키캡이 우수수 튄다
+    }
+  }
   return {
-    init, enter, setSeated, event, shout,
+    init, enter, setSeated, event, shout, smash,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }

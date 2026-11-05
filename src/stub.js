@@ -12,7 +12,7 @@ let _cb=null; const sent=[];
 const fakeRoom={connected:()=>true,onPeers:f=>{_cb=f;},peers:()=>[],presence:async p=>{sent.push(p);}};
 global.claude={use:async n=>n==='room'?fakeRoom:null};
 global.__sent=sent; global.__push=peers=>_cb&&_cb({peers});
-const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm,Yell,activate};})();');
+const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm,Yell,Smash,activate};})();');
 (0,eval)(src);
 const T=globalThis.__T;
 let n=0;
@@ -42,4 +42,14 @@ T.S.mode='hub'; T.goDoor(2); T.update(.016);
   let k=0; while(T.Yell.busy()&&k<400){ T.update(.05); k++; }
   if(T.Yell.busy()) throw new Error('yell never ended');
   console.log('YELL_OK frames',k); T.S.mode='hub'; T.activate(T.hub); }
+/* 벼락: 작업대 앞에서 물건 고르고 내리쳐 부수기 */
+{ const w=T.BUILD.bolt(); T.activate(w); T.S.mode='scene'; T.S.realm={id:'bolt',color:'#f0e070'};
+  const f=w.benchFace(0), m=T.S.me; m.x=f.x; m.z=f.z; m.tx=f.x; m.tz=f.z; m.sitting=false;
+  if(w.smashSpot(f.x,f.z)!==0||w.smashSpot(0,0)!==-1) throw new Error('smashSpot');
+  T.update(.05); T.Smash.start(); if(!T.Smash.busy()) throw new Error('smash not started');
+  let k=0; while(T.Smash.busy()&&k<200){ T.update(.05); k++; }
+  if(T.Smash.busy()) throw new Error('smash stuck');
+  for(let i=0;i<120;i++) T.update(.05);   // 파편이 떨어지고 새 물건이 놓인다
+  if(!w.benchKind(0)) throw new Error('no respawn');
+  console.log('SMASH_OK frames',k); T.S.mode='hub'; T.activate(T.hub); }
 console.log('STUB_RUN_OK scenes:',n);

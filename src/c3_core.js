@@ -20,7 +20,7 @@ const REALMS=[
   {id:'field',name:'들녘',short:'바람과 풀숲',line:'풀잎이 사그락이는 바람',color:'#a9a05a'},
   /* 검은 방: 하얀 방 맞은편 반원. 쌓인 마음을 몸으로 터뜨리는 곳(아직 짓는 중) */
   {id:'thunder',name:'우레',short:'마음껏 소리치기',line:'대나무숲에 소리치기',color:'#d4b04a',dark:true},
-  {id:'bolt',name:'벼락',short:'와장창 깨기',line:'접시와 유리병 깨기',color:'#f0e070',dark:true,soon:true},
+  {id:'bolt',name:'벼락',short:'와장창 깨기',line:'접시와 유리병 깨기',color:'#f0e070',dark:true},
   {id:'spout',name:'용오름',short:'허공에 발차기',line:'이불 위 하이킥',color:'#6f8fe0',dark:true,soon:true},
   {id:'hail',name:'우박',short:'두드리고 때리기',line:'베개 두드리기',color:'#b9c8d8',dark:true,soon:true},
   {id:'quake',name:'지진',short:'쿵쿵 발 구르기',line:'발 굴러 땅 흔들기',color:'#b0824e',dark:true,soon:true},
@@ -226,8 +226,30 @@ function buildFigure(){
       mouth.visible=true; mouth.scale.set(1.25,1.6*k*fade+.3,.55);
     }
   };
+  /* 망치: 오른손에 쥔다. 내리칠 때만 보인다 */
+  const hammer=new THREE.Group(); hammer.visible=false; hammer.position.set(0,-.6,.1); armR.add(hammer);
+  hammer.add(mesh(new THREE.CylinderGeometry(.028,.034,.8,8),M('#8a6a44',{shininess:10}),0,-.3,0));
+  const hh=mesh(new THREE.BoxGeometry(.16,.16,.36),M('#3a3b3f',{shininess:60,specular:0x888888}),0,-.72,0); hammer.add(hh);
+  hammer.add(mesh(new THREE.CylinderGeometry(.04,.04,.06,8),M('#222'),0,-.08,0));
+  /* 내리치기 몸짓: 0~.5 머리 위로 치켜들고 → .5~.62 온 힘으로 내리찍고 → 천천히 돌아온다. null이면 원래대로 */
+  const smash=(t,u)=>{
+    if(u==null){ hammer.visible=false; upper.rotation.set(0,0,0); head.rotation.set(0,0,0); armL.rotation.set(0,0,0); armR.rotation.set(0,0,0);
+      mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
+    hammer.visible=true;
+    const ease=x=>x*x*(3-2*x);
+    let ax, lean, open;
+    if(u<.5){ const k=ease(u/.5); ax=-3.05*k; lean=-.28*k; open=.2*k; }
+    else if(u<.62){ const k=Math.pow((u-.5)/.12,2); ax=lerp(-3.05,-.55,k); lean=lerp(-.28,.5,k); open=lerp(.2,1,k); }
+    else{ const k=ease(Math.min(1,(u-.62)/.38)), hold=u<.75?0:k; ax=lerp(-.55,0,hold); lean=lerp(.5,0,hold); open=1-k; }
+    const jit=u>.6&&u<.72?(Math.sin(t*70)*.03):0;
+    armL.rotation.set(ax+jit,0,.32*Math.min(1,u*4)); armR.rotation.set(ax+jit,0,-.32*Math.min(1,u*4));
+    upper.rotation.set(lean,0,0); head.rotation.set(-lean*.4,0,0);
+    brows[0].rotation.z=-.45; brows[1].rotation.z=.45; brows[0].position.y=brows[1].position.y=.065;
+    eyesOpen.visible=u<.5; eyesClosed.visible=u>=.5;
+    mouth.visible=open>.15; mouth.scale.set(1.2,.4+1.2*open,.5);
+  };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell,
+    root, shadow, flats:[shadow,halo,ring], yell, smash,
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
       legsStand.visible=!sit; legsSit.visible=sit;

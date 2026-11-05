@@ -92,6 +92,17 @@ body{
 .breath.on{opacity:1}
 .yellbox{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:min(560px,94vw);padding:12px 14px;border-radius:22px;background:rgba(20,22,18,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .yellbox[hidden]{display:none}
+#smashBox{gap:6px;padding:10px 12px}
+#smashBox .yhead{display:flex;align-items:baseline;gap:10px;justify-content:center}
+#smashBox .yq{font-size:20px}
+#smashBox .ych{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;max-width:100%;padding:2px 2px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#smashBox .ych::-webkit-scrollbar{display:none}
+#smashBox .pill.ychip{font-size:15px;min-height:40px;padding:6px 14px;flex:none}
+#smashBox .yrow{display:flex;gap:8px;width:100%;align-items:center}
+#smashBox .yrow input{flex:1;min-width:0;min-height:44px;border-radius:999px;border:1px solid var(--pill-edge);padding:0 14px;font:inherit;font-size:15px;background:rgba(255,255,255,.9)}
+#smashBox .pill.ygo{min-width:0;min-height:56px;font-size:21px;padding:10px 22px;flex:none}
+.yellbox .ycount{margin:-4px 0 0;color:#ffe9a8;font-size:15px}
+.yellbox .ycount[hidden]{display:none}
 .yellbox .yq{margin:0;color:#fffbe8;font-family:var(--display);font-weight:700;font-size:22px}
 .yellbox .ych{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .yellbox .ych[hidden],.yellbox .yme[hidden],.yellbox .ygo[hidden]{display:none}
