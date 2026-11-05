@@ -22,13 +22,13 @@ function onLane(x,z){
 /* 대나무 한 그루: 마디가 있는 곧은 줄기, 위쪽에 가는 가지와 길쭉한 잎 다발 */
 function bambooGeo(seed){
   const R=rng(seed), pos=[], col=[], nor=[], idx=[];
-  const H=11+R()*5, r0=.108+R()*.048, N=7, segs=9;
+  const H=11+R()*5, r0=.108+R()*.048, N=6, segs=9;
   const C1=new THREE.Color('#5f8a3c'), C2=new THREE.Color('#7da14a'), NODE=new THREE.Color('#c8c79a'), LEAF=new THREE.Color('#4d7a2e'), LEAF2=new THREE.Color('#79a845'), c=new THREE.Color();
   const lean=(R()-.5)*.5, la=R()*TAU, bx=y=>Math.cos(la)*lean*(y/H)*(y/H), bz=y=>Math.sin(la)*lean*(y/H)*(y/H);
   /* 줄기: 마디마다 살짝 부풀고 연한 띠가 있다 */
-  const rows=segs*3;
+  const rows=segs*2;
   for(let j=0;j<=rows;j++){
-    const y=H*j/rows, inNode=(j%3===0), rr=r0*(1-.35*y/H)*(inNode?1.12:1);
+    const y=H*j/rows, inNode=(j%2===0), rr=r0*(1-.35*y/H)*(inNode?1.12:1);
     for(let i=0;i<=N;i++){
       const a=i/N*TAU, x=Math.cos(a)*rr+bx(y), z=Math.sin(a)*rr+bz(y);
       pos.push(x,y,z); nor.push(Math.cos(a),0,Math.sin(a));
@@ -147,7 +147,18 @@ function buildThunder(){
       transformed.z+=(wv*.5+big*1.1)*hh*hh;`);
   };
   bamMat.customProgramCacheKey=()=>'bamboo';
-  [bambooGeo(5),bambooGeo(17),bambooGeo(29),bambooGeo(43)].forEach((bg,i)=>g.add(instances(bg,bamMat,culms[i])));
+  /* 폰에서 버벅이지 않게: 대나무를 16m 조각으로 나눠, 화면 밖 조각과 안개 너머 조각은 아예 그리지 않는다 */
+  const bamGeos=[bambooGeo(5),bambooGeo(17),bambooGeo(29),bambooGeo(43)], CH=16, chunkMap=new Map(), bamChunks=[];
+  culms.forEach((list,v)=>list.forEach(it=>{ const k=Math.floor(it.x/CH)+','+Math.floor(it.z/CH)+','+v; if(!chunkMap.has(k)) chunkMap.set(k,[]); chunkMap.get(k).push(it); }));
+  chunkMap.forEach((items,k)=>{
+    const src=bamGeos[+k.split(',')[2]], cg=new THREE.BufferGeometry();
+    for(const n in src.attributes) cg.setAttribute(n,src.attributes[n]);
+    cg.setIndex(src.index);
+    let cx=0,cz=0; items.forEach(i=>{ cx+=i.x; cz+=i.z; }); cx/=items.length; cz/=items.length;
+    let r=0; items.forEach(i=>{ r=Math.max(r,Math.hypot(i.x-cx,i.z-cz)); });
+    cg.boundingSphere=new THREE.Sphere(new THREE.Vector3(cx,8,cz),r+10);
+    const im=instances(cg,bamMat,items); im.frustumCulled=true; g.add(im); bamChunks.push({im,cx,cz,r});
+  });
   /* 쓰러진 대나무 몇 그루와 죽순 */
   const fallen=[]; for(let i=0;i<14;i++){ const a=R()*TAU, r=10+R()*36, x=Math.cos(a)*r, z=Math.sin(a)*r; if(clear(x,z)) continue; fallen.push({x,y:thunderH(x,z)+.06,z,sx:1,sy:1,sz:1,rz:Math.PI/2,ry:R()*TAU}); }
   g.add(instances(new THREE.CylinderGeometry(.06,.08,6+R()*3,7),M('#a59a62',{shininess:6}),fallen));
@@ -187,6 +198,7 @@ function buildThunder(){
       for(let k=0;k<3;k++) setTimeout(()=>{ const r=rings[ri++%rings.length]; r.position.set(P.x+(R()-.5)*1.5,.0,P.z+(R()-.5)*1.5); r.userData.age=0; },k*350);
     },
     update(t,dt,me){
+      if(me) bamChunks.forEach(c=>{ c.im.visible=Math.hypot(c.cx-me.x,c.cz-me.z)-c.r<70; });   // 안개(58m) 너머는 그리지 않는다
       const s=spd();
       U.value+=dt*s;
       gustT=Math.max(0,gustT-dt);

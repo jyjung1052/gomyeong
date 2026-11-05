@@ -80,7 +80,7 @@ function clampMe(){
 function resize(){
   const r=cv.getBoundingClientRect();
   W=Math.max(1,r.width); H=Math.max(1,r.height);
-  if(renderer){ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75)); renderer.setSize(W,H,false); }
+  if(renderer){ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5)); renderer.setSize(W,H,false); }
   camera.aspect=W/H;
   camera.fov=W/H<.8?66:52;
   camera.updateProjectionMatrix();
