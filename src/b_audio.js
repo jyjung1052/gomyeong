@@ -333,7 +333,7 @@ const Sound=(()=>{
       const bp=mk.filt('bandpass',260,.7); mk.bed(sc,noiseB,[bp],.2); mk.lfo(sc,.05,90,bp.frequency);
       const hi=mk.bed(sc,noiseW,[mk.filt('bandpass',1400,.5)],.02); mk.lfo(sc,.13,.012,hi.gain);
       sc.timers.push(setTimeout(()=>thunder(sc),3000));
-      mk.every(sc,14,30,()=>thunder(sc));
+      mk.every(sc,25,50,()=>thunder(sc));
     },
     thunder(sc){
       /* 대숲: 바람이 대나무 사이를 지나며 잎끼리 사사삭 스치고, 가끔 줄기끼리 '톡' 부딪힌다 */

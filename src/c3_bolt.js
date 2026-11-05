@@ -78,16 +78,16 @@ function boltMesh(x0,y0,z0,x1,y1,z1,R,width){
 }
 function buildBolt(){
   const g=new THREE.Group(), R=rng(77);
-  g.add(skyDome('#0c0d14','#1c1f2b','#2e3240'));
-  const hemi=new THREE.HemisphereLight(0x9aa4c4,0x24221f,.85); g.add(hemi);
-  const moon=new THREE.DirectionalLight(0xa9b4d6,.35); moon.position.set(-20,30,10); g.add(moon);
+  g.add(skyDome('#4a5878','#8592ad','#e6c9a4'));   // 비구름 걷히는 해 질 녘: 무섭지 않게, 노을빛이 남아 있다
+  const hemi=new THREE.HemisphereLight(0xdfe4f2,0x6b5e50,1.05); g.add(hemi);
+  const moon=new THREE.DirectionalLight(0xffd9b0,.6); moon.position.set(-30,18,-40); g.add(moon);
   const flash=new THREE.PointLight(0xdfe6ff,0,90,1.6); flash.position.set(0,30,0); g.add(flash);
   const flashAmb=new THREE.AmbientLight(0xc8d2ff,0); g.add(flashAmb);
 
   /* 바닥: 검푸른 현무암 고원, 군데군데 갈라진 틈 */
   const T=new THREE.PlaneGeometry(240,240,140,140); T.rotateX(-Math.PI/2);
   const tp=T.attributes.position, tc=new Float32Array(tp.count*3), c=new THREE.Color();
-  const A=new THREE.Color('#2a2c33'), Bc=new THREE.Color('#3b3d44'), Mo=new THREE.Color('#2c3329');
+  const A=new THREE.Color('#77706a'), Bc=new THREE.Color('#9a9184'), Mo=new THREE.Color('#71805a');
   for(let i=0;i<tp.count;i++){
     const x=tp.getX(i), z=tp.getZ(i); tp.setY(i,boltH(x,z));
     const n1=nz(x*.15,2,z*.15)*.5+.5, n2=nz(x*.7,6,z*.7)*.5+.5;
@@ -99,13 +99,14 @@ function buildBolt(){
   /* 바위와 둘레의 주상절리 기둥 */
   const rocks=[]; for(let i=0;i<160;i++){ const a=R()*TAU, r=6+Math.pow(R(),.6)*60, x=Math.cos(a)*r, z=Math.sin(a)*r;
     if(BO_BENCHES.some(b=>Math.hypot(b.x-x,b.z-z)<3.2)||(Math.abs(x)<2.5&&z>8)) continue;
-    const s=r<BO_R?.2+R()*.6:.8+R()*2.4; rocks.push({x,y:boltH(x,z)-s*.2,z,sx:s*1.2,sy:s*.8,sz:s,ry:R()*6,c:choice(R,['#3a3c42','#44464c','#2f3136','#4b4d52'])}); }
+    const s=r<BO_R?.2+R()*.6:.8+R()*2.4; rocks.push({x,y:boltH(x,z)-s*.2,z,sx:s*1.2,sy:s*.8,sz:s,ry:R()*6,c:choice(R,['#8a8680','#97928a','#7d7973','#a39e95'])}); }
   g.add(instances(rockGeo(),VC({vertexColors:false}),rocks));
-  const cols=[]; for(let i=0;i<170;i++){ const a=R()*TAU, r=BO_R+2+R()*22, x=Math.cos(a)*r, z=Math.sin(a)*r, h=1.2+Math.pow(R(),1.5)*5; cols.push({x,y:boltH(x,z)+h/2-1,z,sx:1+R()*.6,sy:h,sz:1+R()*.6,ry:R()*1,c:choice(R,['#26272c','#2e3036','#33353b'])}); }
-  g.add(instances(new THREE.CylinderGeometry(.75,.8,1,6),VC({vertexColors:false,flatShading:true}),cols));
+  /* 둘레의 둥근 바위 언덕: 부드럽게 감싼다 */
+  const big=[]; for(let i=0;i<90;i++){ const a=R()*TAU, r=BO_R+3+R()*24, x=Math.cos(a)*r, z=Math.sin(a)*r, sz=2+R()*5; big.push({x,y:boltH(x,z)-sz*.35,z,sx:sz*1.4,sy:sz*.7,sz:sz,ry:R()*6,c:choice(R,['#8f8a80','#9c968b','#857f76'])}); }
+  g.add(instances(rockGeo(),VC({vertexColors:false}),big));
   /* 먼 산 그림자 */
   for(let i=0;i<22;i++){ const a=i/22*TAU+R()*.15, r=160+R()*60, h=14+R()*26; const cg=new THREE.ConeGeometry(1,1,9,3); const cp=cg.attributes.position; for(let k=0;k<cp.count;k++){ const y=cp.getY(k); if(y<.49){ const f=1+.35*nz(cp.getX(k)*3,i,cp.getZ(k)*3); cp.setX(k,cp.getX(k)*f); cp.setZ(k,cp.getZ(k)*f); cp.setY(k,y+.12*nz(cp.getX(k)*4,i+2,cp.getZ(k)*4)); } } cg.computeVertexNormals();
-    const m=mesh(cg,M('#171922',{flatShading:true}),Math.cos(a)*r,h/2-4,Math.sin(a)*r); m.scale.set(45+R()*40,h,30+R()*30); m.rotation.y=R()*6; g.add(m); }
+    const m=mesh(cg,M('#5d6680',{flatShading:true}),Math.cos(a)*r,h/2-4,Math.sin(a)*r); m.scale.set(45+R()*40,h,30+R()*30); m.rotation.y=R()*6; g.add(m); }
 
   /* 먹구름: 낮게 깔린 구름층이 천천히 흐르고, 번개가 치면 속에서부터 환해진다 */
   const cloudTex=canvasTex(512,512,(gg,w,h)=>{
@@ -113,7 +114,7 @@ function buildBolt(){
     for(let i=0;i<260;i++){ const x=Rr()*w, y=Rr()*h, r=30+Rr()*90, gr=gg.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(255,255,255,.22)'); gr.addColorStop(1,'rgba(255,255,255,0)'); gg.fillStyle=gr; gg.fillRect(x-r,y-r,r*2,r*2); }
   });
   cloudTex.wrapS=cloudTex.wrapT=THREE.RepeatWrapping; cloudTex.repeat.set(3,3);
-  const clouds=[]; [[44,'#3a3e4e',.9],[52,'#2a2d39',.85]].forEach(([y,col,op],i)=>{
+  const clouds=[]; [[44,'#8a90a6',.55],[52,'#6f7690',.5]].forEach(([y,col,op],i)=>{
     const m=mesh(new THREE.PlaneGeometry(700,700),new THREE.MeshBasicMaterial({color:col,alphaMap:cloudTex,transparent:true,opacity:op,depthWrite:false,side:THREE.DoubleSide,fog:false}),0,y,0);
     m.rotation.x=Math.PI/2; m.material.map=null; m.renderOrder=-5; g.add(m); clouds.push(m);
   });
@@ -170,7 +171,7 @@ function buildBolt(){
   }
   let cloudFlash=0, nextFar=4+R()*5;
   let count=0;
-  return {group:g,fog:{c:0x1e2029,n:14,f:120},bg:0x1e2029,bounds:{circle:[0,0,BO_R]},
+  return {group:g,fog:{c:0xc2b9b4,n:40,f:230},bg:0xc2b9b4,bounds:{circle:[0,0,BO_R]},
     avoid:BO_BENCHES.map(b=>({x:b.x,z:b.z,r:1.05})),
     spawn:{x:0,z:BO_R-6},spawnJ:[2,2],groundH:boltH,waterY:-1000,pitch:.2,pitchSit:.12,
     /* 작업대 앞에 서 있으면 그 작업대 번호 */
@@ -190,9 +191,9 @@ function buildBolt(){
     update(t,dt,me){
       clouds.forEach((cl,i)=>{ cl.material.alphaMap.offset.x+=dt*.004*(i?1:-.7); });
       /* 멀리서 치는 마른번개 */
-      nextFar-=dt; if(nextFar<0){ nextFar=3+R()*8; const a=R()*TAU, r=55+R()*70; strike(Math.cos(a)*r,Math.sin(a)*r,false); }
+      nextFar-=dt; if(nextFar<0){ nextFar=7+R()*10; const a=R()*TAU, r=55+R()*70; strike(Math.cos(a)*r,Math.sin(a)*r,false); }
       cloudFlash=Math.max(0,cloudFlash-dt*3); const fl=cloudFlash*(.6+.4*Math.sin(t*90));
-      clouds.forEach((cl,i)=>cl.material.color.set(i?'#2a2d39':'#3a3e4e').lerp(new THREE.Color('#b8c0e8'),fl*.8));
+      clouds.forEach((cl,i)=>cl.material.color.set(i?'#6f7690':'#8a90a6').lerp(new THREE.Color('#b8c0e8'),fl*.8));
       flash.intensity=Math.max(0,flash.intensity-dt*18); flashAmb.intensity=Math.max(0,flashAmb.intensity-dt*3);
       if(Math.random()<.04&&flash.intensity>1) flash.intensity*=1.6;
       for(let i=bolts.length-1;i>=0;i--){ const b=bolts[i]; b.age+=dt; const k=b.age/b.life;
