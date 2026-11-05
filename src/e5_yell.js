@@ -1,7 +1,7 @@
 /* ---- 소리치기: 우레(대나무숲) 데크에 서면 "소리 지를까요?"가 뜬다.
    처음엔 온 힘을 짜내는 "으아아아악!", 두 번째부터는 외칠 말을 고른다(직접 써도 된다). ---- */
 const Yell=(()=>{
-  const SHOUTS=['으아아아아악!!!','아아아아악!!!!!!','시베리아에서 귤이나 까라!!!','왜 나만 갖고 그래!!!','월요일 싫어!!!','다 때려치울 거야!!!','나도 할 만큼 했다고!!!','진짜 너무해!!!'];
+  const SHOUTS=['으아아아아악!!!','아아아아악!!!!!!','시베리아에서 귤이나 까라!!!','월요일 싫어!!!','다 때려치울 거야!!!'];
   let count=0; try{ count=+(localStorage.getItem('gomyeong3d_yells')||0); }catch(e){}
   let active=null;                              // {t0,build,dur,text,fired}
   const box=document.createElement('div'); box.id='yellBox'; box.className='yellbox'; box.hidden=true;
