@@ -22,7 +22,7 @@ function onLane(x,z){
 /* 대나무 한 그루: 마디가 있는 곧은 줄기, 위쪽에 가는 가지와 길쭉한 잎 다발 */
 function bambooGeo(seed){
   const R=rng(seed), pos=[], col=[], nor=[], idx=[];
-  const H=11+R()*5, r0=.09+R()*.04, N=7, segs=9;
+  const H=11+R()*5, r0=.108+R()*.048, N=7, segs=9;
   const C1=new THREE.Color('#5f8a3c'), C2=new THREE.Color('#7da14a'), NODE=new THREE.Color('#c8c79a'), LEAF=new THREE.Color('#4d7a2e'), LEAF2=new THREE.Color('#79a845'), c=new THREE.Color();
   const lean=(R()-.5)*.5, la=R()*TAU, bx=y=>Math.cos(la)*lean*(y/H)*(y/H), bz=y=>Math.sin(la)*lean*(y/H)*(y/H);
   /* 줄기: 마디마다 살짝 부풀고 연한 띠가 있다 */
@@ -109,27 +109,27 @@ function buildThunder(){
   const steps=[]; for(let z=TH_DECK+.8;z<TH_PATHZ;z+=1.15+R()*.3){ const x=.5*Math.sin(z*.2)+(R()-.5)*.4, s=.45+R()*.15; steps.push({x,y:thunderH(x,z)+.02,z,sx:s*1.2,sy:.12,sz:s,ry:R()*3,c:choice(R,['#8a8778','#9a9686','#7b796c'])}); }
   g.add(instances(rockGeo(),keep(VC({vertexColors:false})),steps));
 
-  /* 대나무: 길과 샛길, 연못 둘레만 비우고 사방으로 빽빽하게. 멀리는 안개 속으로 끝없이 */
-  const clear=(x,z)=>pondDist(x,z)<TH_DECK+1.6||onLane(x,z);
-  const culms=[[],[],[],[]], avoid=TH_PONDS.map(p=>({x:p.x,z:p.z,r:RAIL+.26}))   // 난간 앞에서 멈춘다;
-  for(let n=0,tries=0;n<2600&&tries<40000;tries++){
-    const near=R()<.7, rr=near?Math.sqrt(R())*TH_R+2:TH_R+Math.pow(R(),.7)*55, a=R()*TAU, x=Math.cos(a)*rr, z=Math.sin(a)*rr;
-    if(clear(x,z)) continue;
-    n++; const s=.85+R()*.35;
-    culms[n%4].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
-    if(rr<TH_R+2) avoid.push({x,z,r:.16*s});
-  }
-  /* 연못마다 둘레를 더 빽빽이: 데크 바로 바깥이 가장 촘촘하고, 멀어질수록 듬성해진다 */
-  const ringCulms=(P,rMin,rSpan,count)=>{
-    for(let n=0;n<count;n++){
-      const a=R()*TAU, rr=rMin+Math.pow(R(),.8)*rSpan, x=P.x+Math.cos(a)*rr, z=P.z+Math.sin(a)*rr;
-      if(onLane(x,z)) continue;
-      const s=.85+R()*.35;
-      culms[Math.floor(R()*4)].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
-      avoid.push({x,z,r:.16*s});
-    }
+  /* 대나무: 길과 샛길, 연못 둘레만 비우고 사방으로 고르게. 뭉치거나 비는 곳이 없도록
+     가까운 숲은 격자 칸마다 한 그루씩 살짝 흔들어 심고, 연못에 가까울수록 한 그루씩 더 끼워 넣는다 */
+  const clear=(x,z)=>pondDist(x,z)<TH_DECK+.6||onLane(x,z);
+  const culms=[[],[],[],[]], avoid=TH_PONDS.map(p=>({x:p.x,z:p.z,r:RAIL+.26}));   // 난간 앞에서 멈춘다
+  const plant=(x,z,near)=>{
+    const s=.85+R()*.35;
+    culms[Math.floor(R()*4)].push({x,y:thunderH(x,z)-.05,z,sx:s,sy:s*(.9+R()*.25),sz:s,ry:R()*TAU,c:choice(R,['#ffffff','#f2f8e8','#e8f2dc','#fbffef'])});
+    if(near) avoid.push({x,z,r:.19*s});
   };
-  TH_PONDS.forEach(P=>{ ringCulms(P,TH_DECK+.6,1.6,90); ringCulms(P,TH_DECK+2.2,1.8,50); });
+  const C=1.75, E=TH_R+2;
+  for(let cx=-E;cx<=E;cx+=C) for(let cz=-E;cz<=E;cz+=C){
+    const x=cx+(R()-.5)*C*.8, z=cz+(R()-.5)*C*.8;
+    if(Math.hypot(x,z)>E||clear(x,z)) continue;
+    plant(x,z,true);
+    const d=pondDist(x,z)-(TH_DECK+.6);                              // 데크에서 떨어진 거리
+    if(d<6&&R()<1-d/6){ const x2=cx+(R()-.5)*C*.8, z2=cz+(R()-.5)*C*.8; if(!clear(x2,z2)&&Math.hypot(x2-x,z2-z)>.5) plant(x2,z2,true); }
+  }
+  /* 먼 숲: 안개 속으로 끝없이 이어진다 */
+  for(let n=0,tries=0;n<800&&tries<8000;tries++){
+    const rr=E+Math.pow(R(),.7)*55, a=R()*TAU; n++; plant(Math.cos(a)*rr,Math.sin(a)*rr,false);
+  }
   const bamMat=new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:18,specular:0x223322});
   /* 바람에 대나무가 휘청인다: 높이의 제곱만큼 흔들리고, 소리칠 때(GUST)는 크게 출렁인다 */
   bamMat.onBeforeCompile=sh=>{
