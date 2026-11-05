@@ -454,8 +454,7 @@ const Sound=(()=>{
     [o1,lfo].forEach(n=>{ n.start(t0); n.stop(t0+dur+.1); });
   }
   /* 미리 만들어 둔 사람 목소리 고함(거칠게 찢어지는 '아악!', 대숲 울림 포함)과 이를 악문 '으으읍' */
-  const YELL_S=['snd/yell/yell.m4a'],   // 직접 녹음한 고함
-         YELL_G=[0,1,2].map(i=>'snd/yell/strain'+i+'.m4a');
+  const YELL_S=['snd/yell/yell.m4a'], YELL_G=[];   // 직접 녹음한 고함만(참는 '으으읍' 소리는 뺐다)
   const YELL_TAIL=1.6;                                   // 파일 끝의 울림 길이
   let lastYell=-1;
   function playBuf(sc,buf,when,gain,rate,fadeAt){
@@ -470,14 +469,12 @@ const Sound=(()=>{
     const sc=cur, t0=ctx.currentTime;
     YELL_S.concat(YELL_G).forEach(u=>{ if(!bufReady[u]) loadBuf(u).catch(()=>{}); });
     let k=Math.floor(Math.random()*YELL_S.length); if(k===lastYell) k=(k+1)%YELL_S.length;
-    const sb=bufReady[YELL_S[k]], gb=bufReady[YELL_G[Math.floor(Math.random()*YELL_G.length)]];
-    if(sb&&gb){
+    const sb=bufReady[YELL_S[k]];
+    if(sb){
       lastYell=k; const rate=rnd(.96,1.04);
-      playBuf(sc,gb,t0,soft?.5:.85,rnd(.94,1.06),t0+buildDur+.05);
       playBuf(sc,sb,t0+buildDur,soft?.4:1.0,rate);
       return (sb.duration-YELL_TAIL)/rate;
     }
-    growl(sc,t0,buildDur);
     const pats=[[['eu',0],['a',.18]],[['a',0]],[['eu',0],['a',.12],['o',.85]],[['ya',0],['a',.2]],[['i',0],['a',.25]]];
     const parts=Math.random()<.45?1:(Math.random()<.6?2:3);
     let at=t0+buildDur;
