@@ -77,10 +77,25 @@ function clampMe(){
   clampPos(p,world); clampPos(q,world);
   m.x=p.x; m.z=p.z; m.tx=q.x; m.tz=q.z;
 }
+/* 화질 자동 조절: 큰 모니터에서는 그릴 점 수가 폭발하므로 상한(약 230만 점)을 두고,
+   그래도 느리면(초당 45장 미만) 해상도를 조금씩 낮추고, 넉넉하면 다시 올린다 */
+let quality=1, qAcc=0, qN=0, qGood=0;
+function pixRatio(){
+  const cap=Math.min(window.devicePixelRatio||1,1.5,Math.sqrt(2.3e6/(W*H)));
+  return Math.max(.5,cap*quality);
+}
+function adaptQuality(ms){
+  qAcc+=ms; qN++; if(qAcc<1000) return;
+  const avg=qAcc/qN; qAcc=0; qN=0; let q=quality;
+  if(avg>22) { q=Math.max(.55,quality-.12); qGood=0; }
+  else if(avg<15){ if(++qGood>=3){ q=Math.min(1,quality+.06); qGood=0; } }
+  else qGood=0;
+  if(q!==quality){ quality=q; if(renderer){ renderer.setPixelRatio(pixRatio()); renderer.setSize(W,H,false); } }
+}
 function resize(){
   const r=cv.getBoundingClientRect();
   W=Math.max(1,r.width); H=Math.max(1,r.height);
-  if(renderer){ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5)); renderer.setSize(W,H,false); }
+  if(renderer){ renderer.setPixelRatio(pixRatio()); renderer.setSize(W,H,false); }
   camera.aspect=W/H;
   camera.fov=W/H<.8?66:52;
   camera.updateProjectionMatrix();
@@ -438,7 +453,8 @@ function update(dt){
 }
 let last=performance.now();
 function frame(now){
-  const dt=Math.min(.05,(now-last)/1000); last=now;
+  const raw=now-last, dt=Math.min(.05,raw/1000); last=now;
+  if(raw>0&&raw<500&&!document.hidden) adaptQuality(raw);
   update(dt);
   if(renderer) renderer.render(scene,camera);
   requestAnimationFrame(frame);
