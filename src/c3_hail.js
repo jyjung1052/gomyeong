@@ -1,7 +1,7 @@
 /* ---- 우박: 베개가 산더미처럼 쌓인 커다란 방. 매달린 큰 베개를 연타하면 깃털이 우박처럼 쏟아진다 ---- */
 const HA_W=30, HA_R=25, HA_N=8, HA_H=11;
 const HA_BAGS=[...Array(HA_N)].map((_,i)=>{ const a=-Math.PI/2+(i+.5)/HA_N*TAU, r=9; const x=Math.cos(a)*r, z=Math.sin(a)*r;
-  return {x,z,a,sx:x-Math.cos(a)*1.35,sz:z-Math.sin(a)*1.35}; });
+  return {x,z,a,sx:x-Math.cos(a)*1.15,sz:z-Math.sin(a)*1.15}; });
 function hailH(){ return 0; }
 /* 폭신한 베개 모양: 상자를 부풀리고 가장자리는 얇게 */
 function pillowGeo(w,h,d){

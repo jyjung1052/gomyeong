@@ -276,7 +276,14 @@ function buildFigure(){
     const A=sd>0?armR:armL, sgn=sd>0?1:-1, Lg=sd>0?legR:legL;
     if(o.up>0){ const u=Math.min(1,o.up*1.6);
       armR.rotation.set(lerp(-.3,-2.6,u),0,-.15); armR.fore.rotation.set(lerp(-2.2,-.6,u),0,0); upper.rotation.set(lerp(.3,-.25,u),.25,0); }
-    else if(o.move==='jab'){ A.rotation.set(lerp(-.75,-1.55,k),0,sgn*-.3*(1-k)); A.fore.rotation.set(lerp(-1.75,-.05,k),0,0); upper.rotation.set(.12+.12*k,-sgn*.55*k,0); }
+    else if(o.move==='jab'){
+      /* 그림처럼: 뻗는 팔은 어깨 높이로 쭉, 반대 주먹은 허리춤으로 당겨 붙이고, 다리는 앞뒤로 넓게 벌려 몸을 비튼다 */
+      const B=sd>0?armL:armR, chamber=(a,s)=>{ a.rotation.set(.45,0,s*.18); a.fore.rotation.set(-1.7,0,0); };
+      chamber(armL,-1); chamber(armR,1);
+      A.rotation.set(lerp(.45,-1.5,k),0,lerp(sgn*.18,sgn*-.12,k)); A.fore.rotation.set(lerp(-1.7,-.02,k),0,0);
+      upper.rotation.set(.14+.08*k,-sgn*(.15+.4*k),0); head.rotation.set(.04,sgn*.12*k,0);
+      legL.rotation.set(-.38,0,-.06); legR.rotation.set(.32,0,.06);
+      eyesOpen.visible=false; eyesClosed.visible=true; }
     else if(o.move==='hook'){ A.rotation.set(lerp(-.75,-.35,k),lerp(0,-sgn*.4,k),lerp(sgn*-.3,sgn*1.35,k)); A.fore.rotation.set(lerp(-1.75,-1.55,k),0,0); upper.rotation.set(.15,-sgn*.85*k,0); }
     else if(o.move==='elbow'){ A.rotation.set(lerp(-.75,-.55,k),lerp(0,-sgn*.6,k),lerp(sgn*-.3,sgn*1.3,k)); A.fore.rotation.set(lerp(-1.75,-2.55,k),0,0); upper.rotation.set(.2,-sgn*1.0*k,0); }
     else if(o.move==='fkick'){ Lg.rotation.set(-1.5*k,0,0); upper.rotation.set(.12-.35*k,0,0); }

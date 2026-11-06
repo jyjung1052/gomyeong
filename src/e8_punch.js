@@ -33,7 +33,7 @@ const Punch=(()=>{
     const now=S.t; a.combo=now-a.last<.5?a.combo+1:1; a.last=now; a.best=Math.max(a.best,a.combo); a.n++;
     a.side=-a.side; a.pt=now;
     /* 매번 다른 기술: 주먹 뻗기·훅·팔꿈치·앞차기·돌려차기를 섞어 마구 */
-    const r=Math.random(); a.move=r<.3?'jab':r<.52?'hook':r<.7?'elbow':r<.86?'fkick':'rkick';
+    a.move='jab';   /* 왼손·오른손 번갈아 쭉쭉 */
     const kick=a.move==='fkick'||a.move==='rkick';
     const power=Math.min(1.8,(kick?1:.75)+a.combo*.05);
     world.punch(a.i,a.side,power,a.combo,a.move); Sound.punch&&Sound.punch(kick?power*1.3:power); shakeT=kick?.16:.1;
