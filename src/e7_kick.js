@@ -60,7 +60,7 @@ const Kick=(()=>{
       if(!a.final&&u>=.9){ a.final=true; shatter(a); world.spout(a.i); Sound.kick&&Sound.kick(1.4); Sound.whoosh&&Sound.whoosh(); shakeT=.6;
         today++; try{ localStorage.setItem(dayKey(),String(today)); }catch(e){} showCount(); }
       if(a.sp){ a.sp.material.opacity=Math.min(1,u/.1); const bp=world.bedPose(a.i); a.sp.position.x+=(bp.x-a.sp.position.x)*.08; a.sp.position.y+=(bp.y+1.7-a.sp.position.y)*.1; a.sp.position.z+=(bp.z-a.sp.position.z)*.08; }
-      world.kickAnim(a.i,L.hl,L.hr);
+      figure.root.updateMatrixWorld(true); world.kickAnim(a.i,figure.legs);
       if(u>=1){ world.kickEnd(a.i); if(a.sp){ scene.remove(a.sp); a.sp=null; } active=null; figure.kick(S.t,null); rest=1; }
     }
     const show=!active&&!rest&&!S.busy&&spot()>=0&&!m.walking;

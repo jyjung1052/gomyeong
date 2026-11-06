@@ -261,7 +261,7 @@ function buildFigure(){
     mouth.visible=o.k>.2; mouth.scale.set(1.2,.5+o.k*.9,.5);
   };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell, smash, kick,
+    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, legs:[legL,legR],
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
       legsStand.visible=!sit; legsSit.visible=sit;

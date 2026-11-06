@@ -83,13 +83,19 @@ function buildSpout(){
     bg.add(mesh(new THREE.CylinderGeometry(.02,.02,.4,6),woodM,.75,.75,-1.1));
     return {g:bg,quilt,base,qp,qg,lift:0};
   });
-  /* 이불 들썩임: 두 발 높이(0~1)에 맞춰 이불을 밀어 올린다 */
-  function deform(bd,hl,hr,occ){
+  /* 이불 들썩임: 실제 다리(엉덩이→발끝) 위치를 이불 좌표로 받아, 다리보다 늘 조금 높게 덮는다. 발이 이불 밖으로 나오지 않는다 */
+  function deform(bd,segs,occ){
     const {qp,base}=bd;
     for(let k=0;k<qp.count;k++){
       const x=base[k*3], z=base[k*3+2];
       let y=base[k*3+1]+(occ?.3*Math.exp(-((x/.34)**2))*(Math.abs(x)<.6?1:0):0);   // 누운 몸 위로 볼록
-      [[-.13,hl],[.13,hr]].forEach(([lx,h])=>{ if(h<=.01) return; const fz=.72-h*.95, d=((x-lx)/.3)**2+((z-fz)/.4)**2; y+=h*1.0*Math.exp(-d); /* 발이 올라간 자리를 따라 이불이 솟는다 */ });
+      if(segs) segs.forEach(([a,b])=>{
+        const dx=b.x-a.x, dz=b.z-a.z, L2=dx*dx+dz*dz;
+        const t=L2>1e-6?clamp(((x-a.x)*dx+(z-a.z)*dz)/L2,0,1):1;
+        const px=a.x+dx*t, pz=a.z+dz*t, py=a.y+(b.y-a.y)*t, d=Math.hypot(x-px,z-pz);
+        const need=py+.2;                                              // 다리 굵기만큼 위로
+        if(need>y) y=Math.max(y,y+(need-y)*Math.exp(-((d/.34)**2)));
+      });
       qp.setY(k,y);
     }
     qp.needsUpdate=true; bd.qg.computeVertexNormals();
@@ -105,8 +111,11 @@ function buildSpout(){
     bedFace(i){ const b=SP_BEDS[i]; return {heading:Math.atan2(b.x-b.sx,b.z-b.sz)}; },
     /* 누운 자세: 발은 발치, 머리는 베개 쪽 */
     bedPose(i){ const b=SP_BEDS[i], y=spoutH(b.x,b.z)+SP_TOP+.2; return {x:b.x+b.tx*.95,y,z:b.z+b.tz*.95,heading:Math.atan2(b.tx,b.tz)}; },
-    kickAnim(i,hl,hr){ const bd=beds[i]; if(!bd) return; kicking.add(i); deform(bd,hl,hr,1); },
-    kickEnd(i){ const bd=beds[i]; if(!bd) return; kicking.delete(i); deform(bd,0,0,0); },
+    kickAnim(i,legs){ const bd=beds[i]; if(!bd) return; kicking.add(i);
+      bd.quilt.updateMatrixWorld(true);
+      const segs=legs.map(l=>{ l.updateMatrixWorld(true); return [bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,0,0))),bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,-.9,.12)))]; });
+      deform(bd,segs,1); },
+    kickEnd(i){ const bd=beds[i]; if(!bd) return; kicking.delete(i); deform(bd,null,0); },
     /* 마지막 한 방: 침대 옆에서 구름이 소용돌이치며 하늘로 솟는다 */
     spout(i){ const b=SP_BEDS[i]; const c=spoutColumn(b.x+Math.cos(b.a)*8,b.z+Math.sin(b.a)*8,30,54,1.8); c.life=4.5; bursts.push(c); },
     update(t,dt,me){
