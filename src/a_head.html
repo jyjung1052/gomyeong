@@ -168,6 +168,15 @@ body{
 #punchPad .pstat{font-size:15px}
 #punchPad .pstat b{font-size:21px}
 #punchPad .presult{font-size:19px}
+
+/* ---- 윗줄: 모든 안내·버튼을 같은 높이(36px)의 둥근 네모로 ---- */
+.top .pill,.top .pillbox,.top .chip,.top .who{height:36px;min-height:36px;box-sizing:border-box;border-radius:10px;display:flex;align-items:center;padding:0 12px;font-size:13px;line-height:1}
+.top .plain{min-height:0;height:auto;padding:0;font-size:13px}
+.top .chip{flex-direction:row;gap:7px;white-space:nowrap}
+.top .chip b{display:inline;font-size:14px}
+.top .chip small{display:inline;font-size:11px}
+.top .chip b:empty,.top .chip small:empty{display:none}
+#hubHint{border-radius:10px}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
