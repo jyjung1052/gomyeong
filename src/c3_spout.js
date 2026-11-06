@@ -94,7 +94,8 @@ function buildSpout(){
         const t=L2>1e-6?clamp(((x-a.x)*dx+(z-a.z)*dz)/L2,0,1):1;
         const px=a.x+dx*t, pz=a.z+dz*t, py=a.y+(b.y-a.y)*t, d=Math.hypot(x-px,z-pz);
         const need=py+.2;                                              // 다리 굵기만큼 위로
-        if(need>y) y=Math.max(y,y+(need-y)*Math.exp(-((d/.34)**2)));
+        const f=d<.22?1:Math.exp(-(((d-.22)/.3)**2));                     // 다리 둘레는 평평하게 꽉 덮고, 바깥으로 완만히
+        if(need>y) y=y+(need-y)*f;
       });
       qp.setY(k,y);
     }
@@ -113,7 +114,7 @@ function buildSpout(){
     bedPose(i){ const b=SP_BEDS[i], y=spoutH(b.x,b.z)+SP_TOP+.2; return {x:b.x+b.tx*.95,y,z:b.z+b.tz*.95,heading:Math.atan2(b.tx,b.tz)}; },
     kickAnim(i,legs){ const bd=beds[i]; if(!bd) return; kicking.add(i);
       bd.quilt.updateMatrixWorld(true);
-      const segs=legs.map(l=>{ l.updateMatrixWorld(true); return [bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,0,0))),bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,-.9,.12)))]; });
+      const segs=legs.map(l=>{ l.updateMatrixWorld(true); return [bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,0,0))),bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,-.92,.2)))]; });
       deform(bd,segs,1); },
     kickEnd(i){ const bd=beds[i]; if(!bd) return; kicking.delete(i); deform(bd,null,0); },
     /* 마지막 한 방: 침대 옆에서 구름이 소용돌이치며 하늘로 솟는다 */
