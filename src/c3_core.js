@@ -250,10 +250,10 @@ function buildFigure(){
   };
   /* 이불킥: 누운 채 두 다리를 번갈아 허공으로 차고, 고개를 도리도리, 주먹으로 침대를 쾅쾅. o=null이면 원래대로 */
   const kick=(t,o)=>{
-    if(!o){ legL.visible=legR.visible=true; legL.rotation.set(0,0,0); legR.rotation.set(0,0,0); armL.rotation.set(0,0,0); armR.rotation.set(0,0,0); head.rotation.set(0,0,0); upper.rotation.set(0,0,0);
+    if(!o){ legL.visible=legR.visible=armL.visible=armR.visible=true; legL.rotation.set(0,0,0); legR.rotation.set(0,0,0); armL.rotation.set(0,0,0); armR.rotation.set(0,0,0); head.rotation.set(0,0,0); upper.rotation.set(0,0,0);
       mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
     legL.rotation.set(-o.hl*1.5,0,.08); legR.rotation.set(-o.hr*1.5,0,-.08);
-    legL.visible=legR.visible=false;   // 다리는 이불 속: 이불 모양으로만 보인다(발이 삐져나오지 않게)
+    legL.visible=legR.visible=armL.visible=armR.visible=false;   // 팔도 이불 속에서 쾅쾅: 이불 모양으로만   // 다리는 이불 속: 이불 모양으로만 보인다(발이 삐져나오지 않게)
     const pound=Math.abs(Math.sin(t*9))*o.k;
     armL.rotation.set(-.15-.5*pound,0,.35); armR.rotation.set(-.15-.5*Math.abs(Math.cos(t*9))*o.k,0,-.35);
     head.rotation.set(-.1,Math.sin(t*13)*.45*o.k,0); upper.rotation.set(0,Math.sin(t*6.5)*.12*o.k,0);
@@ -262,7 +262,8 @@ function buildFigure(){
     mouth.visible=o.k>.2; mouth.scale.set(1.2,.5+o.k*.9,.5);
   };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, legs:[legL,legR],
+    root, shadow, flats:[shadow,halo,ring], yell, smash, kick,
+    limbs:[[legL,new THREE.Vector3(0,-.92,.2)],[legR,new THREE.Vector3(0,-.92,.2)],[armL,new THREE.Vector3(0,-.62,.08)],[armR,new THREE.Vector3(0,-.62,.08)]],
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
       legsStand.visible=!sit; legsSit.visible=sit;

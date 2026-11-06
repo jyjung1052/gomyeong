@@ -1,7 +1,8 @@
 /* ---- 용오름: 별이 총총한 밤, 구름 바다 위에 떠 있는 포근한 침대들. 누워서 이불킥을 하면 구름이 소용돌이쳐 하늘로 솟는다 ---- */
-const SP_R=40, SP_BED_R=10, SP_N=6;
+const SP_R=44, SP_N=12;
+/* 침대 12개: 안쪽 원 6개(반지름 12m)와 바깥 원 6개(24m)를 엇갈려 놓아 서로 넉넉히 떨어지게 */
 const SP_BEDS=[...Array(SP_N)].map((_,i)=>{
-  const a=-Math.PI/2+(i+.5)/SP_N*TAU, x=Math.cos(a)*SP_BED_R, z=Math.sin(a)*SP_BED_R;
+  const outer=i>=6, k=i%6, a=-Math.PI/2+(k+(outer?0:.5))/6*TAU+(outer?.26:0), rr=outer?25:12, x=Math.cos(a)*rr, z=Math.sin(a)*rr;
   const tx=-Math.sin(a), tz=Math.cos(a);                       // 침대 긴 쪽은 원을 따라(접선 방향)
   return {x,z,a,tx,tz,sx:x-Math.cos(a)*1.25,sz:z-Math.sin(a)*1.25,ry:Math.atan2(tx,tz)};
 });
@@ -71,13 +72,13 @@ function buildSpout(){
     bg.add(mesh(new THREE.BoxGeometry(1.15,.18,2.1),sheetM,0,SP_TOP-.09,0));
     const pil=mesh(new THREE.SphereGeometry(.5,16,10),pillowM,0,SP_TOP+.08,-.82); pil.scale.set(.95,.22,.42); bg.add(pil);
     /* 이불: 격자 판을 매트리스 아래쪽 2/3에 덮고, 가장자리는 늘어뜨린다 */
-    const W=1.32, L=1.5, nx=12, nz2=16, qg=new THREE.PlaneGeometry(W,L,nx,nz2); qg.rotateX(-Math.PI/2);
+    const W=1.32, L=1.75, nx=12, nz2=18, qg=new THREE.PlaneGeometry(W,L,nx,nz2); qg.rotateX(-Math.PI/2);
     const qp=qg.attributes.position, base=new Float32Array(qp.count*3);
     for(let k=0;k<qp.count;k++){ const x=qp.getX(k), z=qp.getZ(k), ex=Math.max(0,Math.abs(x)-.56); base[k*3]=Math.sign(x)*Math.min(Math.abs(x),.6); base[k*3+1]=.035-ex*2.2+.02*Math.sin(z*9)*Math.sin(x*7); base[k*3+2]=z; }
     for(let k=0;k<qp.count;k++) qp.setXYZ(k,base[k*3],base[k*3+1],base[k*3+2]);
     qg.computeVertexNormals();
     const [c1,c2]=quilts[i%quilts.length];
-    const quilt=mesh(qg,new THREE.MeshPhongMaterial({map:quiltTex(c1,c2),shininess:4,side:THREE.DoubleSide}),0,SP_TOP,.32); quilt.userData.noCut=true; quilt.material.userData.noCut=true; bg.add(quilt);
+    const quilt=mesh(qg,new THREE.MeshPhongMaterial({map:quiltTex(c1,c2),shininess:4,side:THREE.DoubleSide}),0,SP_TOP,.2); quilt.userData.noCut=true; quilt.material.userData.noCut=true; bg.add(quilt);
     /* 머리맡 작은 등 */
     bg.add(glowSprite('#ffd89a',.5,.75,.95,-1.1,.9)); bg.add(glowSprite('#ffd89a',2.2,.75,.95,-1.1,.18));
     bg.add(mesh(new THREE.CylinderGeometry(.02,.02,.4,6),woodM,.75,.75,-1.1));
@@ -105,7 +106,7 @@ function buildSpout(){
   let ri=0;
   return {group:g,fog:{c:0x5d6699,n:35,f:170},bg:0x5d6699,bounds:{circle:[0,0,SP_R]},tapTargets:beds.map(b=>b.g),
     avoid:SP_BEDS.map(b=>({x:b.x,z:b.z,r:1.0})).concat(SP_BEDS.map(b=>({x:b.x+b.tx*.7,z:b.z+b.tz*.7,r:.9})),SP_BEDS.map(b=>({x:b.x-b.tx*.7,z:b.z-b.tz*.7,r:.9}))),
-    spawn:{x:0,z:SP_R-14},spawnJ:[2,2],groundH:spoutH,waterY:-1000,pitch:.22,pitchSit:.14,
+    spawn:{x:0,z:SP_R-10},spawnJ:[2,2],groundH:spoutH,waterY:-1000,pitch:.22,pitchSit:.14,
     kickSpot(x,z){ for(let i=0;i<SP_BEDS.length;i++){ const b=SP_BEDS[i]; if(Math.hypot(x-b.sx,z-b.sz)<1.0) return i; } return -1; },
     nearSpot(x,z){ let b=SP_BEDS[0], d=1e9; SP_BEDS.forEach(q=>{ const e=Math.hypot(x-q.sx,z-q.sz); if(e<d){ d=e; b=q; } }); return {x:b.sx,z:b.sz}; },
     snapSpot(x,z){ let b=null, d=3.5; SP_BEDS.forEach(q=>{ const e=Math.min(Math.hypot(x-q.x,z-q.z),Math.hypot(x-q.sx,z-q.sz)); if(e<d){ d=e; b=q; } }); return b?{x:b.sx,z:b.sz}:null; },
@@ -114,7 +115,7 @@ function buildSpout(){
     bedPose(i){ const b=SP_BEDS[i], y=spoutH(b.x,b.z)+SP_TOP+.2; return {x:b.x+b.tx*.95,y,z:b.z+b.tz*.95,heading:Math.atan2(b.tx,b.tz)}; },
     kickAnim(i,legs){ const bd=beds[i]; if(!bd) return; kicking.add(i);
       bd.quilt.updateMatrixWorld(true);
-      const segs=legs.map(l=>{ l.updateMatrixWorld(true); return [bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,0,0))),bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,-.92,.2)))]; });
+      const segs=legs.map(([l,end])=>{ l.updateMatrixWorld(true); return [bd.quilt.worldToLocal(l.localToWorld(new THREE.Vector3(0,0,0))),bd.quilt.worldToLocal(l.localToWorld(end.clone()))]; });
       deform(bd,segs,1); },
     kickEnd(i){ const bd=beds[i]; if(!bd) return; kicking.delete(i); deform(bd,null,0); },
     /* 마지막 한 방: 침대 옆에서 구름이 소용돌이치며 하늘로 솟는다 */
