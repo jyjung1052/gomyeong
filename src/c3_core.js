@@ -152,9 +152,11 @@ function buildFigure(){
   const mkArm=sx=>{
     const a=new THREE.Group(); a.position.set(sx*.235,.4,0);
     a.add(ball(.078,top,0,0,0)); a.add(limb([0,0,0],[0,-.27,.02],.074,.088,top)); a.add(ball(.09,top,0,-.27,.02));
-    a.add(limb([0,-.27,.02],[0,-.52,.09],.09,.122,top));
-    const cuff=mesh(new THREE.TorusGeometry(.125,.012,8,24),topDk,0,-.52,.09); cuff.rotation.x=Math.PI/2+.28; a.add(cuff);
-    a.add(ball(.068,skin,0,-.6,.1,1,1.15,.8)); standArms.add(a); return a;
+    /* 팔꿈치: 아래팔은 따로 접힌다(기본은 펴진 그대로) */
+    const f=new THREE.Group(); f.position.set(0,-.27,.02); a.add(f); a.fore=f;
+    f.add(limb([0,0,0],[0,-.25,.07],.09,.122,top));
+    const cuff=mesh(new THREE.TorusGeometry(.125,.012,8,24),topDk,0,-.25,.07); cuff.rotation.x=Math.PI/2+.28; f.add(cuff);
+    f.add(ball(.068,skin,0,-.33,.08,1,1.15,.8)); standArms.add(a); return a;
   };
   const armL=mkArm(-1), armR=mkArm(1);
   /* 앉았을 때의 팔: 무릎 위로 내려 두 손을 포갠다 */
@@ -261,17 +263,26 @@ function buildFigure(){
     brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066;
     mouth.visible=o.k>.2; mouth.scale.set(1.2,.5+o.k*.9,.5);
   };
-  /* 베개 펀치: 주먹을 턱 앞에 든 자세에서 한 손씩 쭉 뻗는다. up>0이면 마지막 어퍼컷. o=null이면 원래대로 */
+  /* 베개 치기: 주먹을 턱 앞에 든 가드 자세에서 기술 하나씩. o.move: jab·hook·elbow·fkick·rkick, o.k: 뻗은 정도(0~1), o.up: 마지막 어퍼컷. o=null이면 원래대로 */
   const punch=(t,o)=>{
-    if(!o){ armL.rotation.set(0,0,0); armR.rotation.set(0,0,0); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
+    if(!o){ [armL,armR].forEach(a=>{ a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); legL.rotation.set(0,0,0); legR.rotation.set(0,0,0);
+      upper.rotation.set(0,0,0); head.rotation.set(0,0,0); root.rotation.z=0;
       mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
-    const kL=o.side<0?o.k:0, kR=o.side>0?o.k:0;
-    armL.rotation.set(-1.15-.5*kL,0,.42-.3*kL); armR.rotation.set(-1.15-.5*kR,0,-.42+.3*kR);
-    upper.rotation.set(.08+.1*o.k,-o.side*.38*o.k,0); head.rotation.set(0,o.side*.15*o.k,0);
-    if(o.up>0){ const u=o.up, sw=Math.sin(Math.min(1,u)*Math.PI);
-      armR.rotation.set(lerp(-.4,-2.9,Math.min(1,u*1.6)),0,-.2); upper.rotation.set(lerp(.25,-.25,Math.min(1,u*1.6)),.2*sw,0); }
-    brows[0].rotation.z=-.35; brows[1].rotation.z=.35; brows[0].position.y=brows[1].position.y=.068;
-    mouth.visible=o.k>.5||o.up>0; mouth.scale.set(1,.6+.6*Math.max(o.k,o.up?1:0),.5);
+    const sd=o.side, k=o.k, bob=Math.sin(t*9)*.04;
+    /* 가드: 팔꿈치를 굽혀 주먹을 턱 앞에 */
+    const guard=(a,s)=>{ a.rotation.set(-.75+bob,0,s*-.3); a.fore.rotation.set(-1.75,0,0); };
+    guard(armL,-1); guard(armR,1); legL.rotation.set(0,0,0); legR.rotation.set(0,0,0);
+    upper.rotation.set(.12,0,0); head.rotation.set(.05,0,0); root.rotation.z=0;
+    const A=sd>0?armR:armL, sgn=sd>0?1:-1, Lg=sd>0?legR:legL;
+    if(o.up>0){ const u=Math.min(1,o.up*1.6);
+      armR.rotation.set(lerp(-.3,-2.6,u),0,-.15); armR.fore.rotation.set(lerp(-2.2,-.6,u),0,0); upper.rotation.set(lerp(.3,-.25,u),.25,0); }
+    else if(o.move==='jab'){ A.rotation.set(lerp(-.75,-1.55,k),0,sgn*-.3*(1-k)); A.fore.rotation.set(lerp(-1.75,-.05,k),0,0); upper.rotation.set(.12+.12*k,-sgn*.55*k,0); }
+    else if(o.move==='hook'){ A.rotation.set(lerp(-.75,-.35,k),lerp(0,-sgn*.4,k),lerp(sgn*-.3,sgn*1.35,k)); A.fore.rotation.set(lerp(-1.75,-1.55,k),0,0); upper.rotation.set(.15,-sgn*.85*k,0); }
+    else if(o.move==='elbow'){ A.rotation.set(lerp(-.75,-.55,k),lerp(0,-sgn*.6,k),lerp(sgn*-.3,sgn*1.3,k)); A.fore.rotation.set(lerp(-1.75,-2.55,k),0,0); upper.rotation.set(.2,-sgn*1.0*k,0); }
+    else if(o.move==='fkick'){ Lg.rotation.set(-1.5*k,0,0); upper.rotation.set(.12-.35*k,0,0); }
+    else if(o.move==='rkick'){ Lg.rotation.set(-.7*k,0,sgn*1.25*k); upper.rotation.set(.1,-sgn*.5*k,-sgn*.45*k); }
+    brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066;
+    mouth.visible=k>.4||o.up>0; mouth.scale.set(1.1,.6+.7*Math.max(k,o.up?1:0),.5);
   };
   return {
     root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch,

@@ -65,7 +65,8 @@ function buildHail(){
     piv.add(mesh(new THREE.CylinderGeometry(.025,.025,.9,6),rope,0,-.45,0));
     const bag=mesh(bagG,M(choice(R,['#ffffff','#fbe3e8','#e3eefb','#fdf3d6','#efe4fb']),{shininess:6}),0,-1.95,0); piv.add(bag);
     const band=mesh(new THREE.TorusGeometry(.42,.03,6,24),M('#d9b98a'),0,-1.05,0); band.rotation.x=Math.PI/2; piv.add(band);
-    return {st,piv,bag,vx:0,vz:0,ax:0,az:0,squash:0,note:null};
+    piv.add(mesh(new THREE.CylinderGeometry(.025,.025,.5,6),rope,0,-3.15,0)); st.add(mesh(new THREE.CylinderGeometry(.16,.2,.06,12),wood,0,.03,0));   // 바닥에도 묶어 고정
+    return {st,piv,bag,wob:0,squash:0,hy:0,note:null};
   });
   /* 깃털: 맞을 때마다 터지고, 콤보가 쌓이면 천장에서 우박처럼 쏟아진다. 천천히 흔들리며 내려앉는다 */
   const FN=700, fpos=new Float32Array(FN*3), fv=[...Array(FN)].map(()=>({x:0,y:-99,z:0,vx:0,vy:0,vz:0,life:0,ph:0}));
@@ -86,11 +87,11 @@ function buildHail(){
     setNote(i,label){ const bd=bags[i]; if(!bd) return; if(bd.note){ bd.bag.remove(bd.note); bd.note.material.map.dispose(); bd.note=null; }
       if(label){ const n=noteSprite(label); n.scale.set(.6,.37,1); n.position.set(0,.1,.62); bd.bag.add(n); bd.note=n; } },
     /* 한 대 맞음: 베개가 출렁 밀려나고, 깃털이 터진다. combo가 클수록 깃털 우박이 세진다 */
-    punch(i,side,power,combo){
+    punch(i,side,power,combo,move){
       const b=HA_BAGS[i], bd=bags[i]; if(!bd) return;
       const dx=b.x-b.sx, dz=b.z-b.sz, L=Math.hypot(dx,dz)||1;
-      bd.vx+=dx/L*1.6*power+(side*.4)*(-dz/L); bd.vz+=dz/L*1.6*power+(side*.4)*(dx/L); bd.squash=Math.min(1,.5+power*.4);
-      const hx=b.sx+dx/L*.95, hz=b.sz+dz/L*.95, hy=1.35+(Math.random()-.5)*.3;
+      bd.wob=Math.min(1.4,bd.wob+.5*power); bd.squash=Math.min(1,.55+power*.35); bd.hy=move==='fkick'||move==='rkick'?-.55:.1;   /* 베개는 고정: 움찔 눌렸다 출렁 */
+      const hx=b.sx+dx/L*.95, hz=b.sz+dz/L*.95, hy=(move==='fkick'?.85:move==='rkick'?1.05:1.5)+(Math.random()-.5)*.2;
       const n=Math.round(4+4*power);
       for(let k=0;k<n;k++){ const a=Math.random()*TAU, s=1+Math.random()*2.5*power; spawnF(hx,hy,hz,Math.cos(a)*s,1+Math.random()*2.5*power,Math.sin(a)*s); }
       rain=Math.min(1,rain+.04*Math.min(combo,20));
@@ -98,17 +99,15 @@ function buildHail(){
     /* 마지막 어퍼컷: 베개가 크게 휘청, 깃털이 방 가득 */
     finale(i){
       const b=HA_BAGS[i], bd=bags[i]; if(!bd) return; const dx=b.x-b.sx, dz=b.z-b.sz, L=Math.hypot(dx,dz)||1;
-      bd.vx+=dx/L*5; bd.vz+=dz/L*5; bd.squash=1;
+      bd.wob=2; bd.squash=1; bd.hy=.3;
       for(let k=0;k<160;k++){ const a=Math.random()*TAU, s=1+Math.random()*5; spawnF(b.x,1.5,b.z,Math.cos(a)*s,3+Math.random()*6,Math.sin(a)*s); }
       rain=1;
     },
     update(t,dt,me){
       bags.forEach(bd=>{
-        /* 진자처럼 흔들리다 멈춘다 */
-        bd.vx+=(-bd.ax*9-bd.vx*1.6)*dt; bd.vz+=(-bd.az*9-bd.vz*1.6)*dt; bd.ax+=bd.vx*dt; bd.az+=bd.vz*dt;
-        const ry=bd.st.rotation.y, c=Math.cos(-ry), s=Math.sin(-ry), lx=bd.ax*c-bd.az*s, lz=bd.ax*s+bd.az*c;
-        bd.piv.rotation.set(lz*.35,0,-lx*.35);
-        bd.squash=Math.max(0,bd.squash-dt*4); const q=bd.squash; bd.bag.scale.set(1+q*.18,1-q*.1,1-q*.22);
+        /* 위아래로 단단히 묶여 있어 밀려나지 않고, 맞은 자리가 움푹 눌렸다가 출렁인다 */
+        bd.wob=Math.max(0,bd.wob-dt*3); bd.piv.rotation.set(-bd.wob*.035*Math.sin(t*34),0,bd.wob*.02*Math.sin(t*27));
+        bd.squash=Math.max(0,bd.squash-dt*5); const q=bd.squash; bd.bag.scale.set(1+q*.16,1-q*.04,1-q*.3); bd.bag.position.z=-q*.12; bd.bag.rotation.x=q*(bd.hy||0)*.25;
       });
       /* 깃털 우박: 콤보가 높을수록 천장 쪽에서 우수수 */
       if(rain>0&&me){ const n=Math.floor(rain*40*dt+Math.random()); for(let k=0;k<n;k++){ const a=Math.random()*TAU, r=Math.random()*7; spawnF(me.x+Math.cos(a)*r,HA_H-1.5,me.z+Math.sin(a)*r,0,-.5,0); } rain=Math.max(0,rain-dt*.18); }

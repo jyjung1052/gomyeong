@@ -24,7 +24,7 @@ const Punch=(()=>{
     if(active) return; const i=spot(); if(i<0) return;
     const m=S.me; m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false; m.heading=world.bagFace(i).heading;
     world.setNote(i,inp.value.trim()); inp.value='';
-    active={i,phase:'go',t0:S.t,n:0,combo:0,best:0,last:-9,side:1,pt:-9,up:0,tEnd:0};
+    active={i,phase:'go',t0:S.t,n:0,combo:0,best:0,last:-9,side:1,pt:-9,up:0,tEnd:0,move:'jab'};
     pn.textContent='0'; pc.textContent=''; res.textContent=''; btn.hidden=false; bar.style.width='100%';
     box.hidden=true; pad.hidden=false; touch();
   }
@@ -32,8 +32,11 @@ const Punch=(()=>{
     const a=active; if(!a||a.phase!=='go') return;
     const now=S.t; a.combo=now-a.last<.5?a.combo+1:1; a.last=now; a.best=Math.max(a.best,a.combo); a.n++;
     a.side=-a.side; a.pt=now;
-    const power=Math.min(1.6,.7+a.combo*.05);
-    world.punch(a.i,a.side,power,a.combo); Sound.punch&&Sound.punch(power); shakeT=.1;
+    /* 매번 다른 기술: 주먹 뻗기·훅·팔꿈치·앞차기·돌려차기를 섞어 마구 */
+    const r=Math.random(); a.move=r<.3?'jab':r<.52?'hook':r<.7?'elbow':r<.86?'fkick':'rkick';
+    const kick=a.move==='fkick'||a.move==='rkick';
+    const power=Math.min(1.8,(kick?1:.75)+a.combo*.05);
+    world.punch(a.i,a.side,power,a.combo,a.move); Sound.punch&&Sound.punch(kick?power*1.3:power); shakeT=kick?.16:.1;
     pn.textContent=a.n; pc.textContent=a.combo>=3?`${a.combo} 콤보!`:''; touch();
     btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump');
   }
@@ -58,8 +61,8 @@ const Punch=(()=>{
   }
   function pose(fig){
     const a=active; if(!a||a.phase==='done') return;
-    const since=S.t-a.pt, k=since<.22?Math.sin(since/.22*Math.PI):0;
-    fig.punch(S.t,{side:a.side,k,up:a.phase==='up'?a.up:0});
+    const dur=a.move==='fkick'||a.move==='rkick'?.32:.22, since=S.t-a.pt, x=since/dur, k=x<1?(x<.35?Math.sin(x/.35*Math.PI/2):Math.cos((x-.35)/.65*Math.PI/2)):0;   /* 빠르게 뻗고 조금 천천히 거둔다 */
+    fig.punch(S.t,{move:a.move,side:a.side,k,up:a.phase==='up'?a.up:0});
   }
   function shake(){ return shakeT>0?Math.min(.1,.2*shakeT):0; }
   return {tick,pose,shake,start,hit,busy:()=>!!active&&active.phase!=='done'};
