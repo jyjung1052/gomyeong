@@ -491,7 +491,8 @@ const Sound=(()=>{
     const sb=bufReady[YELL_S[k]];
     if(sb){
       lastYell=k; const rate=rnd(.96,1.04);
-      playBuf(sc,sb,t0+buildDur,soft?.4:1.0,rate);
+      if(soft) return 0;   /* 말로 외칠 때는 말이 끝난 뒤 scream()으로 고함을 붙인다 */
+      playBuf(sc,sb,t0+buildDur,1.0,rate);
       return (sb.duration-YELL_TAIL)/rate;
     }
     const pats=[[['eu',0],['a',.18]],[['a',0]],[['eu',0],['a',.12],['o',.85]],[['ya',0],['a',.2]],[['i',0],['a',.25]]];
@@ -546,6 +547,11 @@ const Sound=(()=>{
     const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35,t+.5); g.gain.exponentialRampToValueAtTime(.0001,t+3.2);
     s.connect(bp); bp.connect(g); g.connect(sc.bus); const w=ctx.createGain(); w.gain.value=.6; g.connect(w); w.connect(sc.wet); s.start(t,rnd(0,2)); s.stop(t+3.4);
   }
+  /* 녹음한 고함을 지금 바로(말로 윽박지른 끝에 붙이는 '으아악!') */
+  function scream(gain){
+    if(!ctx||!cur) return; const sb=bufReady[YELL_S[0]]; if(!sb) return;
+    playBuf(cur,sb,ctx.currentTime,gain||.8,rnd(.97,1.05));
+  }
   function smash(kind){
     if(!ctx||!cur) return;
     const sc=cur, t=ctx.currentTime, later=(ms,f)=>sc.timers.push(setTimeout(()=>{ if(!sc.dead) f(); },ms));
@@ -567,7 +573,7 @@ const Sound=(()=>{
     }
   }
   return {
-    init, enter, setSeated, event, shout, smash, kick, whoosh, punch,
+    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }

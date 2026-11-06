@@ -20,14 +20,25 @@ const Yell=(()=>{
   (document.querySelector('#hud .bottom')||document.body).prepend(box);
 
   const pureScream=t=>/^[으아악앙이야와우워어억끄캬꺄ㅏㅡ!~.\s]+$/.test(t);
+  /* 윽박지르기: 그냥 읽지 않고 한 마디씩 끊어서, 갈수록 빠르고 높게 몰아붙인 뒤 마지막에 진짜 고함을 붙인다 */
   function speak(text){
+    let done=false; const tail=()=>{ if(done) return; done=true; Sound.scream&&Sound.scream(.85); if(world.shout) world.shout(1.2); shakeBoost=.9; };
     try{
       if(!window.speechSynthesis||pureScream(text)) return;
-      const u=new SpeechSynthesisUtterance(text.replace(/!+/g,'!')); u.lang='ko-KR'; u.rate=1.12; u.pitch=1.35; u.volume=1;
-      const v=speechSynthesis.getVoices().find(v=>/ko/i.test(v.lang)); if(v) u.voice=v;
-      speechSynthesis.cancel(); speechSynthesis.speak(u);
-    }catch(e){}
+      const words=text.replace(/[!?.~]+/g,' ').trim().split(/\s+/).filter(Boolean);
+      const v=speechSynthesis.getVoices().find(v=>/ko/i.test(v.lang));
+      speechSynthesis.cancel();
+      words.forEach((w,i)=>{
+        const k=words.length>1?i/(words.length-1):1;
+        const u=new SpeechSynthesisUtterance(w+'!'); u.lang='ko-KR'; if(v) u.voice=v;
+        u.rate=Math.min(1.6,1.2+.35*k); u.pitch=Math.min(2,1.35+.6*k); u.volume=1;
+        if(i===words.length-1) u.onend=tail;
+        speechSynthesis.speak(u);
+      });
+      setTimeout(tail,900+text.length*190);   // 말이 끝났다는 알림이 안 와도(아이폰 등) 고함은 붙인다
+    }catch(e){ tail(); }
   }
+  let shakeBoost=0;
   function start(text){
     if(active||S.mode!=='scene'||!world.yellSpot) return;
     const m=S.me; if(m.sitting) setSit(false);
@@ -36,6 +47,7 @@ const Yell=(()=>{
     const build=.05; let dur=Math.min(5,2.3+text.length*.07+Math.random()*.8);   // 참는 몸짓 없이 곧바로 터뜨린다
     const real=Sound.shout(build,dur,!pureScream(text));   // 녹음 고함이면 그 길이에 몸짓을 맞춘다
     if(real&&pureScream(text)) dur=Math.max(1.1,real+.3);
+    if(!pureScream(text)) dur=Math.min(7,2.4+text.length*.22);   // 한 마디씩 윽박지르는 동안 몸짓을 이어 간다
     active={t0:S.t,build,dur,text,fired:false};
     count++; opened=true; try{ localStorage.setItem('gomyeong3d_yells',String(count)); }catch(e){}
     box.hidden=true; touch();
@@ -90,6 +102,7 @@ const Yell=(()=>{
   }
   /* 고함칠 때 카메라도 함께 떨린다 */
   function shake(){
+    if(shakeBoost>0){ shakeBoost=Math.max(0,shakeBoost-.016); return .06*shakeBoost; }
     if(!active) return 0;
     const u=S.t-active.t0;
     return u<active.build?.012*u/active.build:(u<active.build+active.dur?.05*(1-(u-active.build)/active.dur):0);
