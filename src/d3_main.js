@@ -112,7 +112,7 @@ function syncHud(){
   el.back.hidden=!inScene; el.who.hidden=!hubMode; el.sitRow.hidden=!inScene||dark; el.hubHint.hidden=!hubMode;
   el.actRow.hidden=!dark; el.actBtn.textContent=dark?({thunder:'소리 지르기',bolt:'깨부수기',spout:'이불킥',hail:'베개 때리기'}[S.realm.id]||S.realm.short):'';
   el.name.textContent=hubMode?'문을 하나 고르세요':(S.realm?S.realm.name:'');
-  el.hint.textContent=hubMode?'하얀 방':(S.realm?S.realm.line:'');
+  el.hint.textContent=hubMode?'로비':(S.realm?S.realm.line:'');
   el.who.textContent=S.user+' 님';
   el.sitBtn.textContent=S.me.sitting?'일어나기':'여기 앉기'; el.lieBtn.textContent=S.me.lie?'앉기':'눕기';
   if(!inScene){ el.breathText.classList.remove('on'); el.hud.classList.remove('calm'); S.calm=false; }

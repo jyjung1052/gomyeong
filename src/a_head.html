@@ -143,6 +143,31 @@ body{
 @media (prefers-reduced-motion:reduce){
   #veil,#login,.top,.row,.breath{transition-duration:.01s}
 }
+
+/* ---- 화면을 덜 가리게: 글자·버튼을 한 단계 작고 촘촘하게(모든 화면 공통) ---- */
+.pill{font-size:13px;padding:6px 12px;min-height:34px}
+.plain{font-size:13px;min-height:34px;padding:6px 0}
+.who,.timer{height:34px}
+.chip{padding:3px 12px}
+.chip b{font-size:15px}
+.chip small{font-size:11px}
+.sit{font-size:16px;padding:8px 16px;min-height:44px;min-width:100px}
+.breath{font-size:16px;padding:4px 14px;min-height:30px}
+.pill.act{min-width:min(200px,56vw);min-height:46px;font-size:17px;padding:6px 20px;box-shadow:0 5px 0 #8f5614,0 9px 16px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.75)}
+.pill.act:active{transform:translateY(4px);box-shadow:0 1px 0 #8f5614,0 4px 8px rgba(0,0,0,.3)}
+.yellbox{gap:6px;padding:10px 12px;max-width:min(400px,calc(100vw - 32px))}
+.yellbox .yq,.yellbox.actbox .yq{font-size:16px}
+.yellbox .yhint{font-size:12px}
+.yellbox .ycount{font-size:13px}
+.yellbox .pill.ygo,.yellbox.actbox .pill.ygo{min-width:min(200px,56vw);min-height:44px;font-size:17px;padding:6px 20px;box-shadow:0 5px 0 #8f5614,0 9px 16px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.75)}
+.yellbox .pill.ygo:active{transform:translateY(4px);box-shadow:0 1px 0 #8f5614,0 4px 8px rgba(0,0,0,.3)}
+.yellbox .pill.ychip,.yellbox.actbox .pill.ychip{font-size:13px;min-height:32px;padding:4px 11px;box-shadow:0 3px 0 #b9a77c,0 5px 9px rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.9)}
+.yellbox .yme input,.yellbox.actbox .yrow input{min-height:36px}
+.yellbox .yme .pill,.yellbox.actbox .yrow .pill:not(.ygo){min-height:36px}
+#punchPad .ppunch{width:112px;height:112px;font-size:32px}
+#punchPad .pstat{font-size:15px}
+#punchPad .pstat b{font-size:21px}
+#punchPad .presult{font-size:19px}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -179,7 +204,7 @@ body{
 
 <div id="hud" hidden>
   <div class="top fadey">
-    <button id="backBtn" class="pill" type="button">‹ 하얀 방</button>
+    <button id="backBtn" class="pill" type="button">‹ 로비</button>
     <div id="who" class="pill who"></div>
     <div id="together" class="pill who" hidden></div>
     <div class="place"><div class="chip"><b id="placeName"></b><small id="placeHint"></small></div></div>
