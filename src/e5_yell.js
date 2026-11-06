@@ -20,34 +20,16 @@ const Yell=(()=>{
   (document.querySelector('#hud .bottom')||document.body).prepend(box);
 
   const pureScream=t=>/^[으아악앙이야와우워어억끄캬꺄ㅏㅡ!~.\s]+$/.test(t);
-  /* 윽박지르기: 그냥 읽지 않고 한 마디씩 끊어서, 갈수록 빠르고 높게 몰아붙인 뒤 마지막에 진짜 고함을 붙인다 */
-  function speak(text){
-    let done=false; const tail=()=>{ if(done) return; done=true; Sound.scream&&Sound.scream(.85); if(world.shout) world.shout(1.2); shakeBoost=.9; };
-    try{
-      if(!window.speechSynthesis||pureScream(text)) return;
-      const words=text.replace(/[!?.~]+/g,' ').trim().split(/\s+/).filter(Boolean);
-      const v=speechSynthesis.getVoices().find(v=>/ko/i.test(v.lang));
-      speechSynthesis.cancel();
-      words.forEach((w,i)=>{
-        const k=words.length>1?i/(words.length-1):1;
-        const u=new SpeechSynthesisUtterance(w+'!'); u.lang='ko-KR'; if(v) u.voice=v;
-        u.rate=Math.min(1.6,1.2+.35*k); u.pitch=Math.min(2,1.35+.6*k); u.volume=1;
-        if(i===words.length-1) u.onend=tail;
-        speechSynthesis.speak(u);
-      });
-      setTimeout(tail,900+text.length*190);   // 말이 끝났다는 알림이 안 와도(아이폰 등) 고함은 붙인다
-    }catch(e){ tail(); }
-  }
+  /* 기계 음성으로 읽으면 어색해서 읽지 않는다: 쓴 말은 큰 글씨로 터져 나오고, 소리는 녹음한 진짜 고함으로 */
+  function speak(text){ if(pureScream(text)) return; Sound.scream&&Sound.scream(1.0); }
   let shakeBoost=0;
   function start(text){
     if(active||S.mode!=='scene'||!world.yellSpot) return;
     const m=S.me; if(m.sitting) setSit(false);
     m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false;
-    try{ if(window.speechSynthesis){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); } }catch(e){}   // 아이폰: 손가락으로 누른 순간에 말소리 길을 열어 둔다
     const build=.05; let dur=Math.min(5,2.3+text.length*.07+Math.random()*.8);   // 참는 몸짓 없이 곧바로 터뜨린다
     const real=Sound.shout(build,dur,!pureScream(text));   // 녹음 고함이면 그 길이에 몸짓을 맞춘다
     if(real&&pureScream(text)) dur=Math.max(1.1,real+.3);
-    if(!pureScream(text)) dur=Math.min(7,2.4+text.length*.22);   // 한 마디씩 윽박지르는 동안 몸짓을 이어 간다
     active={t0:S.t,build,dur,text,fired:false};
     count++; opened=true; try{ localStorage.setItem('gomyeong3d_yells',String(count)); }catch(e){}
     box.hidden=true; touch();
