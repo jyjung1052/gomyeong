@@ -22,7 +22,7 @@ const REALMS=[
   {id:'thunder',name:'우레',short:'마음껏 소리치기',line:'대나무숲에 소리치기',color:'#d4b04a',dark:true},
   {id:'bolt',name:'벼락',short:'와장창 깨기',line:'접시와 유리병 깨기',color:'#f0e070',dark:true},
   {id:'spout',name:'용오름',short:'이불킥',line:'구름 위 침대에서 이불킥',color:'#6f8fe0',dark:true},
-  {id:'hail',name:'우박',short:'두드리고 때리기',line:'베개 두드리기',color:'#b9c8d8',dark:true,soon:true},
+  {id:'hail',name:'우박',short:'베개 때리기',line:'베개 가득한 방에서 연타',color:'#b9c8d8',dark:true},
   {id:'quake',name:'지진',short:'쿵쿵 발 구르기',line:'발 굴러 땅 흔들기',color:'#b0824e',dark:true,soon:true},
   {id:'avalanche',name:'눈사태',short:'와르르 무너뜨리기',line:'쌓인 것 무너뜨리기',color:'#dce6f0',dark:true,soon:true},
   {id:'gale',name:'질풍',short:'미친 듯이 달리기',line:'트랙을 미친 듯이 달리기',color:'#e0673f',dark:true,soon:true},
@@ -261,8 +261,20 @@ function buildFigure(){
     brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066;
     mouth.visible=o.k>.2; mouth.scale.set(1.2,.5+o.k*.9,.5);
   };
+  /* 베개 펀치: 주먹을 턱 앞에 든 자세에서 한 손씩 쭉 뻗는다. up>0이면 마지막 어퍼컷. o=null이면 원래대로 */
+  const punch=(t,o)=>{
+    if(!o){ armL.rotation.set(0,0,0); armR.rotation.set(0,0,0); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
+      mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
+    const kL=o.side<0?o.k:0, kR=o.side>0?o.k:0;
+    armL.rotation.set(-1.15-.5*kL,0,.42-.3*kL); armR.rotation.set(-1.15-.5*kR,0,-.42+.3*kR);
+    upper.rotation.set(.08+.1*o.k,-o.side*.38*o.k,0); head.rotation.set(0,o.side*.15*o.k,0);
+    if(o.up>0){ const u=o.up, sw=Math.sin(Math.min(1,u)*Math.PI);
+      armR.rotation.set(lerp(-.4,-2.9,Math.min(1,u*1.6)),0,-.2); upper.rotation.set(lerp(.25,-.25,Math.min(1,u*1.6)),.2*sw,0); }
+    brows[0].rotation.z=-.35; brows[1].rotation.z=.35; brows[0].position.y=brows[1].position.y=.068;
+    mouth.visible=o.k>.5||o.up>0; mouth.scale.set(1,.6+.6*Math.max(o.k,o.up?1:0),.5);
+  };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell, smash, kick,
+    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch,
     limbs:[[legL,new THREE.Vector3(0,-.92,.2)],[legR,new THREE.Vector3(0,-.92,.2)],[armL,new THREE.Vector3(0,-.62,.08)],[armR,new THREE.Vector3(0,-.62,.08)]],
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;

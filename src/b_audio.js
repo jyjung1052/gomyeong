@@ -328,6 +328,11 @@ const Sound=(()=>{
       };
       tick();
     },
+    hail(sc){
+      /* 베개 방: 포근하고 조용한 실내, 창밖에서 가끔 새가 지저귄다 */
+      mk.bed(sc,noiseB,[mk.filt('lowpass',380,.4)],.05);
+      mk.every(sc,7,16,()=>{ const f=rnd(2600,3800), n=Math.floor(rnd(2,5)); for(let i=0;i<n;i++) sc.timers.push(setTimeout(()=>tone(sc,f*rnd(.95,1.08),f*rnd(1.1,1.3),rnd(.06,.11),rnd(.008,.016),'sine',.5,rnd(-.7,.7)),i*rnd(110,170))); });
+    },
     spout(sc){
       /* 구름 위 밤: 높은 곳의 부드러운 바람과 아주 조용한 별빛 화음 */
       const bp=mk.filt('bandpass',420,.5); mk.bed(sc,noiseB,[bp],.12); mk.lfo(sc,.04,140,bp.frequency);
@@ -520,6 +525,19 @@ const Sound=(()=>{
     const sg=ctx.createGain(); sg.gain.setValueAtTime(0,t); sg.gain.linearRampToValueAtTime(.32*p,t+.015); sg.gain.exponentialRampToValueAtTime(.0001,t+.25);
     s.connect(bp); bp.connect(sg); sg.connect(sc.bus); s.start(t,rnd(0,2)); s.stop(t+.3);
   }
+  /* 베개 펀치: 폭신하게 '퍽!' + 깃털이 훅 날리는 소리 */
+  function punch(power){
+    if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime, p=Math.min(2.2,power||1);
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(rnd(130,160),t); o.frequency.exponentialRampToValueAtTime(55,t+.12);
+    const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(.35*Math.min(1.4,p),t+.005); og.gain.exponentialRampToValueAtTime(.0001,t+.2);
+    o.connect(og); og.connect(sc.bus); o.start(t); o.stop(t+.25);
+    const s=ctx.createBufferSource(); s.buffer=noiseW; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(rnd(900,1300),t); lp.frequency.exponentialRampToValueAtTime(300,t+.12);
+    const sg=ctx.createGain(); sg.gain.setValueAtTime(0,t); sg.gain.linearRampToValueAtTime(.4*Math.min(1.4,p),t+.004); sg.gain.exponentialRampToValueAtTime(.0001,t+.16);
+    s.connect(lp); lp.connect(sg); sg.connect(sc.bus); s.start(t,rnd(0,2)); s.stop(t+.2);
+    const f=ctx.createBufferSource(); f.buffer=noiseW; const hp=ctx.createBiquadFilter(); hp.type='bandpass'; hp.frequency.value=rnd(2500,4000); hp.Q.value=.6;
+    const fg=ctx.createGain(); fg.gain.setValueAtTime(0,t+.02); fg.gain.linearRampToValueAtTime(.05*p,t+.06); fg.gain.exponentialRampToValueAtTime(.0001,t+.4);
+    f.connect(hp); hp.connect(fg); fg.connect(sc.bus); f.start(t+.02,rnd(0,2)); f.stop(t+.45);
+  }
   /* 용오름: 바람이 휘감아 하늘로 솟구치는 소리 */
   function whoosh(){
     if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime;
@@ -549,7 +567,7 @@ const Sound=(()=>{
     }
   }
   return {
-    init, enter, setSeated, event, shout, smash, kick, whoosh,
+    init, enter, setSeated, event, shout, smash, kick, whoosh, punch,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }
