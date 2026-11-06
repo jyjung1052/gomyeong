@@ -242,7 +242,16 @@ function onTap(px,py){
 let ptr=null;
 /* 두 손가락 핀치: 벌리면 확대, 오므리면 축소 */
 const pts=new Map(); let pinch=null;
-const ZMIN=.35, ZMAX=2.2;
+const ZMIN=.35, ZMAX=3.4;
+/* 브라우저 자체 확대 막기(아이폰 사파리·카카오톡 등): 두 번 톡, 두 손가락 화면 확대, Ctrl+휠. 3D 확대는 위 pinch로 따로 한다 */
+if(typeof document.addEventListener==='function'){
+['gesturestart','gesturechange','gestureend'].forEach(k=>document.addEventListener(k,e=>e.preventDefault(),{passive:false}));
+let lastTouchEnd=0;
+document.addEventListener('touchend',e=>{ const now=Date.now(); if(now-lastTouchEnd<320&&!(e.target.closest&&e.target.closest('input,textarea'))) e.preventDefault(); lastTouchEnd=now; },{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchmove',e=>{ if(e.touches&&e.touches.length>1&&e.target!==cv) e.preventDefault(); },{passive:false});
+window.addEventListener('wheel',e=>{ if(e.ctrlKey&&e.target!==cv) e.preventDefault(); },{passive:false});
+}   // 손가락으로 벌리면 가까이, 오므리면 멀리서 공간 전체가 보이게
 const pdist=()=>{ const a=[...pts.values()]; return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1; };
 cv.addEventListener('pointerdown',e=>{
   pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -443,8 +452,8 @@ function update(dt){
   c.dist=damp(c.dist,camGoal(),2.6,dt);
   c.tgt.x=damp(c.tgt.x,m.x,9,dt); c.tgt.z=damp(c.tgt.z,m.z,9,dt);
   c.tgt.y=damp(c.tgt.y,P.y+(m.sitting?1.05-.65*m.lieK:1.45-.5*m.swim),3,dt);
-  const d=c.dist*c.zoom, cp=Math.cos(c.pitch);
-  c.pos.set(c.tgt.x+Math.sin(c.yaw)*cp*d,Math.max(.5,c.tgt.y+Math.sin(c.pitch)*d),c.tgt.z+Math.cos(c.yaw)*cp*d);
+  const d=c.dist*c.zoom, pt=Math.min(1.15,c.pitch+Math.max(0,c.zoom-1)*.22), cp=Math.cos(pt);   /* 멀어질수록 위에서 내려다본다 */
+  c.pos.set(c.tgt.x+Math.sin(c.yaw)*cp*d,Math.max(.5,c.tgt.y+Math.sin(pt)*d),c.tgt.z+Math.cos(c.yaw)*cp*d);
   if(world.groundH){ const lo=Math.max(world.groundH(c.pos.x,c.pos.z),world.waterY)+.7; if(c.pos.y<lo) c.pos.y=lo; }
   camera.position.copy(c.pos);
   const sk=Yell.shake()+Smash.shake()+Kick.shake()+Punch.shake(); if(sk){ camera.position.x+=(Math.random()-.5)*sk*2; camera.position.y+=(Math.random()-.5)*sk*2; camera.position.z+=(Math.random()-.5)*sk*2; }

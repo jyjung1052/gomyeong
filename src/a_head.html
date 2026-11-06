@@ -30,7 +30,8 @@
   color-scheme:light;
 }
 html,body{height:100%}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}   /* 카카오톡·아이폰 큰 글씨 설정이 화면 글자를 멋대로 키우지 않게 */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{touch-action:manipulation;overscroll-behavior:none}   /* 두 번 톡 쳐도 브라우저가 화면을 확대하지 않게 */   /* 카카오톡·아이폰 큰 글씨 설정이 화면 글자를 멋대로 키우지 않게 */
 body{
   background:var(--paper); color:var(--ink); font:15px/1.5 var(--body);
   padding-block:0;
