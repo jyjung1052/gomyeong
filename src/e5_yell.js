@@ -12,7 +12,9 @@ const Yell=(()=>{
   let sel=SHOUTS[0];
   function pick(t){ sel=t; chips.querySelectorAll('.ychip').forEach(b=>b.classList.toggle('on',b.textContent===t)); }
   pick(SHOUTS[0]);
-  go.addEventListener('click',()=>start(count===0?SHOUTS[0]:sel));
+  /* 처음엔 묻지 않고 바로 '아아악!'. 한 번 지르고 나면 외칠 말을 고르거나 쓸 수 있는 칸이 열린다 */
+  let opened=false;
+  go.addEventListener('click',()=>start(opened?sel:SHOUTS[0]));
   form.addEventListener('submit',e=>{ e.preventDefault(); const t=inp.value.trim(); if(t){ start(/[!]$/.test(t)?t:t+'!!!'); inp.value=''; inp.blur(); } });
   ['pointerdown','touchstart','wheel'].forEach(k=>box.addEventListener(k,e=>e.stopPropagation(),{passive:true}));
   (document.querySelector('#hud .bottom')||document.body).prepend(box);
@@ -35,7 +37,7 @@ const Yell=(()=>{
     const real=Sound.shout(build,dur,!pureScream(text));   // 녹음 고함이면 그 길이에 몸짓을 맞춘다
     if(real&&pureScream(text)) dur=Math.max(1.1,real+.3);
     active={t0:S.t,build,dur,text,fired:false};
-    count++; try{ localStorage.setItem('gomyeong3d_yells',String(count)); }catch(e){}
+    count++; opened=true; try{ localStorage.setItem('gomyeong3d_yells',String(count)); }catch(e){}
     box.hidden=true; touch();
   }
   /* 외친 말이 큰 글씨로 솟아오르고, 메아리처럼 여러 겹으로 흩어진다 */
@@ -74,9 +76,8 @@ const Yell=(()=>{
     }
     const show=!active&&S.mode==='scene'&&!S.busy&&world.yellSpot&&world.yellSpot(m.x,m.z)&&!m.walking;
     if(show&&box.hidden){
-      const first=count===0;
-      q.textContent='소리 지를까요?';
-      chips.hidden=first; form.hidden=first; go.hidden=false;
+      q.textContent=opened?'또 지를까요? 외칠 말을 골라도 돼요':'소리 지를까요?';
+      chips.hidden=!opened; form.hidden=!opened; go.hidden=false;
     }
     box.hidden=!show;
   }

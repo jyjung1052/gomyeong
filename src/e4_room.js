@@ -50,10 +50,9 @@ const Together=(()=>{
     const here=[...others.values()].filter(o=>o.s===sid()).length;
     const all=others.size;
     pill.hidden=!(started&&S.mode!=='login');
-    if(!room) pill.textContent='혼자 앉는 중'+(why?' (연결 실패: '+why+')':'');
+    if(!room) pill.textContent='혼자 (연결 안 됨)';
     else if(!room.connected()) pill.textContent='연결 중…';
-    else pill.textContent=all===0?`지금은 혼자예요 (감지 ${seenN}명)`:(here>0?`함께 ${here}명`:`다른 곳에 ${all}명`);
-    if(room&&room.debug) pill.textContent+=' · '+room.debug();
+    else pill.textContent=all===0?'지금은 혼자예요':(here>0?`함께 ${here}명`:`다른 곳에 ${all}명`);   /* 짧게: 폰 화면 윗줄에 들어가도록 */
   }
   async function start(){
     if(started) return; started=true;

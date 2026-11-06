@@ -30,6 +30,7 @@
   color-scheme:light;
 }
 html,body{height:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}   /* 카카오톡·아이폰 큰 글씨 설정이 화면 글자를 멋대로 키우지 않게 */
 body{
   background:var(--paper); color:var(--ink); font:15px/1.5 var(--body);
   padding-block:0;
@@ -80,6 +81,7 @@ body{
 .who{pointer-events:none;color:#55534c;display:flex;align-items:center;height:40px;padding-block:0}
 .top{flex-wrap:wrap}
 #hud.hubmode .place{order:3;flex-basis:100%}
+@media (max-width:560px){ #hud .place{order:3;flex-basis:100%} #vol{width:46px} .top .pill,.top .pillbox{padding-left:11px;padding-right:11px} .top{gap:6px} }   /* 좁은 화면: 방 이름은 아랫줄 가운데에 온전히 */
 .place .chip{min-width:0}
 .place{flex:1;min-width:0;display:flex;justify-content:center;pointer-events:none}
 .chip{border-radius:14px;padding:4px 14px;text-align:center;max-width:100%;line-height:1.3}
