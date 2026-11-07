@@ -12,7 +12,7 @@ let _cb=null; const sent=[];
 const fakeRoom={connected:()=>true,onPeers:f=>{_cb=f;},peers:()=>[],presence:async p=>{sent.push(p);}};
 global.claude={use:async n=>n==='room'?fakeRoom:null};
 global.__sent=sent; global.__push=peers=>_cb&&_cb({peers});
-const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm,Yell,Smash,Kick,Punch,Crumple,activate};})();');
+const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm,Yell,Smash,Kick,Punch,Tear,activate};})();');
 (0,eval)(src);
 const T=globalThis.__T;
 let n=0;
@@ -70,12 +70,10 @@ T.S.mode='hub'; T.goDoor(2); T.update(.016);
   if(T.Punch.busy()) throw new Error('punch stuck');
   for(let i=0;i<80;i++) T.update(.05);
   console.log('PUNCH_OK frames',k); T.S.mode='hub'; T.activate(T.hub); }
-/* 눈사태: 쓰고, 구기고, 던져서 굴러가 눈사태까지 */
+/* 눈사태: 종이 찢기 판을 열고 닫기 */
 { const w=T.BUILD.avalanche(); T.activate(w); T.S.mode='scene'; T.S.realm={id:'avalanche',color:'#dce6f0',dark:true};
-  const sp=w.nearSpot(0,-20), m=T.S.me; m.x=sp.x; m.z=sp.z; m.tx=sp.x; m.tz=sp.z; m.sitting=false;
-  if(w.crumpleSpot(sp.x,sp.z)<0||w.crumpleSpot(0,0)!==-1) throw new Error('crumpleSpot');
-  T.update(.05); T.Crumple.start(); for(let i=0;i<8;i++){ T.Crumple.press(); T.update(.05); } T.Crumple.press();
-  let k=0; while(T.Crumple.busy()&&k<400){ T.update(.05); k++; }
-  for(let i=0;i<400;i++) T.update(.05);
-  console.log('CRUMPLE_OK frames',k); T.S.mode='hub'; T.activate(T.hub); }
+  w.onAct(); if(!T.Tear.busy()) throw new Error('tear box not open');
+  T.Tear.begin('야근'); for(let i=0;i<40;i++) T.update(.05); w.tearBits(50,T.S.me); for(let i=0;i<60;i++) T.update(.05);
+  T.Tear.close(); for(let i=0;i<5;i++) T.update(.05);
+  console.log('TEAR_OK'); T.S.mode='hub'; T.activate(T.hub); }
 console.log('STUB_RUN_OK scenes:',n);

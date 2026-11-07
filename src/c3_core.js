@@ -24,7 +24,7 @@ const REALMS=[
   {id:'spout',name:'용오름',short:'이불킥',line:'구름 위 침대에서 이불킥',color:'#6f8fe0',dark:true},
   {id:'hail',name:'우박',short:'베개 때리기',line:'베개 가득한 방에서 연타',color:'#b9c8d8',dark:true},
   {id:'quake',name:'지진',short:'쿵쿵 발 구르기',line:'발 굴러 땅 흔들기',color:'#b0824e',dark:true,soon:true},
-  {id:'avalanche',name:'눈사태',short:'구겨 던지기',line:'걱정을 구겨 설산 아래로',color:'#dce6f0',dark:true},
+  {id:'avalanche',name:'눈사태',short:'종이 찢기',line:'가루가루 찢어 눈을 내리기',color:'#dce6f0',dark:true},
   {id:'gale',name:'질풍',short:'미친 듯이 달리기',line:'트랙을 미친 듯이 달리기',color:'#e0673f',dark:true,soon:true},
   {id:'downpour',name:'장대비',short:'실컷 울기',line:'창가에서 실컷 울기',color:'#5f86a8',dark:true,soon:true}
 ];
@@ -295,6 +295,11 @@ function buildFigure(){
   const crumple=(t,o)=>{
     if(!o){ [armL,armR].forEach(a=>{ a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
       mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
+    if(o.mode==='tear'){ const k=o.k, j=Math.sin(t*24)*.05*k;   /* 두 손으로 종이를 쥐고 양옆으로 쫙 */
+      armL.rotation.set(-1.25+j,0,.25-.55*k); armR.rotation.set(-1.25-j,0,-.25+.55*k);
+      armL.fore.rotation.set(-.9+.4*k,0,0); armR.fore.rotation.set(-.9+.4*k,0,0);
+      upper.rotation.set(.12,Math.sin(t*9)*.12*k,0); head.rotation.set(.2,0,0);
+      brows[0].rotation.z=-.3*k; brows[1].rotation.z=.3*k; mouth.visible=k>.5; mouth.scale.set(1.1,.5+.5*k,.5); return; }
     if(o.mode==='knead'){ const k=o.k, j=Math.sin(t*30)*.04*k;
       armL.rotation.set(-1.05+j,0,.5+.12*k); armR.rotation.set(-1.05-j,0,-.5-.12*k);
       armL.fore.rotation.set(-1.0-.35*k,0,0); armR.fore.rotation.set(-1.0-.35*k,0,0);

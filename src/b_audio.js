@@ -545,6 +545,35 @@ const Sound=(()=>{
     const fg=ctx.createGain(); fg.gain.setValueAtTime(0,t+.02); fg.gain.linearRampToValueAtTime(.05*p,t+.06); fg.gain.exponentialRampToValueAtTime(.0001,t+.4);
     f.connect(hp); hp.connect(fg); fg.connect(sc.bus); f.start(t+.02,rnd(0,2)); f.stop(t+.45);
   }
+  /* 종이 찢기: 긋는 동안 섬유가 뜯기는 '찌이익'(빠를수록 밝고 크게), 다 갈라질 때 '쫙!' */
+  let tearN=null;
+  function tearOn(){
+    if(!ctx||!cur||tearN) return; const sc=cur, t=ctx.currentTime;
+    const s=ctx.createBufferSource(); s.buffer=noiseW; s.loop=true;
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=.9;
+    const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=500;
+    const am=ctx.createGain(); am.gain.value=.5;                 /* 섬유가 뜯기는 떨림(거칠게 들쭉날쭉) */
+    const g=ctx.createGain(); g.gain.value=0;
+    s.connect(bp); bp.connect(hp); hp.connect(am); am.connect(g); g.connect(sc.bus);
+    const lfo=ctx.createOscillator(); lfo.type='sawtooth'; lfo.frequency.value=40; const lg=ctx.createGain(); lg.gain.value=.5; lfo.connect(lg); lg.connect(am.gain);
+    s.start(t,rnd(0,2)); lfo.start(t);
+    tearN={s,lfo,g,bp,lg,sc};
+  }
+  function tearSet(v){
+    if(!tearN||!ctx) return; const t=ctx.currentTime, n=tearN;
+    n.g.gain.setTargetAtTime(v<.02?0:.12+.55*v,t,.03); n.bp.frequency.setTargetAtTime(700+3200*v,t,.04);
+    n.lfo.frequency.setTargetAtTime(25+90*v+rnd(-8,8),t,.05);
+    if(v>.05&&Math.random()<.5+v*.5) hit(n.sc,1800,6500,1.5,rnd(.02,.06)*(.5+v),rnd(.01,.025));   /* 톡톡 끊어지는 섬유 */
+  }
+  function tearOff(){ if(!tearN||!ctx) return; const t=ctx.currentTime, n=tearN; tearN=null; n.g.gain.setTargetAtTime(0,t,.04); n.s.stop(t+.3); n.lfo.stop(t+.3); }
+  function rip(v){
+    if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime, d=.09+.12*(1-v);
+    const s=ctx.createBufferSource(); s.buffer=noiseW; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=.7;
+    bp.frequency.setValueAtTime(1500+2500*v,t); bp.frequency.exponentialRampToValueAtTime(900,t+d);
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35+.45*v,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+d+.05);
+    s.connect(bp); bp.connect(g); g.connect(sc.bus); s.start(t,rnd(0,2)); s.stop(t+d+.08);
+    for(let i=0;i<5;i++) hit(sc,2000,7000,2,rnd(.03,.08),rnd(.01,.02));
+  }
   /* 종이 구기는 바스락 소리 */
   function crumple(){
     if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime;
@@ -597,7 +626,7 @@ const Sound=(()=>{
     }
   }
   return {
-    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche,
+    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche, tearOn, tearSet, tearOff, rip,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }
