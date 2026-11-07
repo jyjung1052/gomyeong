@@ -110,7 +110,7 @@ function syncHud(){
   el.hud.classList.toggle('hubmode',hubMode);
   const dark=inScene&&S.realm&&S.realm.dark;   // 검은 방: 앉기·눕기 대신 그 방에서 할 일 버튼
   el.back.hidden=!inScene; el.who.hidden=!hubMode; el.sitRow.hidden=!inScene||dark; el.hubHint.hidden=!hubMode;
-  el.actRow.hidden=!dark; el.actBtn.textContent=dark?({thunder:'소리 지르기',bolt:'깨부수기',spout:'이불킥',hail:'베개 때리기'}[S.realm.id]||S.realm.short):'';
+  el.actRow.hidden=!dark; el.actBtn.textContent=dark?({thunder:'소리 지르기',bolt:'깨부수기',spout:'이불킥',hail:'베개 때리기',avalanche:'구겨 던지기'}[S.realm.id]||S.realm.short):'';
   el.name.textContent=hubMode?'문을 하나 고르세요':(S.realm?S.realm.name:'');
   el.hint.textContent=hubMode?'로비':(S.realm?S.realm.line:'');
   el.who.textContent=S.user+' 님';
@@ -169,7 +169,7 @@ function enterRealm(realm){
     /* 여럿이 한곳에 겹쳐 서지 않도록 들어서는 자리를 조금씩 흩는다 */
     if(w.spawnJ){ const J=w.spawnJ; if(J.length===1){ const a=Math.random()*TAU, r=Math.sqrt(Math.random())*J[0]; m.x+=Math.cos(a)*r; m.z+=Math.sin(a)*r; } else { m.x+=(Math.random()*2-1)*J[0]; m.z+=(Math.random()*2-1)*J[1]; } }
     m.tx=m.x; m.tz=m.z; m.heading=Math.PI;
-    S.cam.yaw=0; S.cam.pitch=S.cam.pitchGoal=w.pitch||.32; S.cam.zoom=1;
+    S.cam.yaw=0; S.cam.pitch=S.cam.pitchGoal=w.pitch||.32; S.cam.zoom=1; S.camFocus=null;
     clampMe(); snapCam();
     Sound.setSeated(false); Sound.enter(realm.id);
     el.timer.textContent='앉은 시간 00:00';
@@ -387,14 +387,14 @@ function update(dt){
   S.t+=dt;
   const fx=-Math.sin(c.yaw), fz=-Math.cos(c.yaw), rx=Math.cos(c.yaw), rz=-Math.sin(c.yaw);
   const kf=keys.up-keys.down, kr=keys.right-keys.left;
-  const active=S.mode!=='login'&&!S.busy&&!Yell.busy()&&!Smash.busy()&&!Kick.busy()&&!Punch.busy();
+  const active=S.mode!=='login'&&!S.busy&&!Yell.busy()&&!Smash.busy()&&!Kick.busy()&&!Punch.busy()&&!Crumple.busy();
   if((kf||kr)&&active){
     if(m.sitting) setSit(false);
     const l=Math.hypot(kf,kr)||1;
     const vx=(fx*kf+rx*kr)/l, vz=(fz*kf+rz*kr)/l;
     const sw=1-.4*clamp(footPose(m.x,m.z).dep,0,1.2)/1.2; m.x+=vx*3.4*sw*dt; m.z+=vz*3.4*sw*dt; m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=true;
     m.heading+=angDiff(m.heading,Math.atan2(vx,vz))*(1-Math.exp(-12*dt));
-  }else if(!m.sitting&&S.mode!=='login'&&!Yell.busy()&&!Smash.busy()&&!Kick.busy()&&!Punch.busy()){
+  }else if(!m.sitting&&S.mode!=='login'&&!Yell.busy()&&!Smash.busy()&&!Kick.busy()&&!Punch.busy()&&!Crumple.busy()){
     const dx=m.tx-m.x, dz=m.tz-m.z, d=Math.hypot(dx,dz);
     if(d>.05){
       const st=Math.min(d,3.4*(1-.4*clamp(footPose(m.x,m.z).dep,0,1.2)/1.2)*dt);
@@ -407,8 +407,8 @@ function update(dt){
   }
   clampMe();
   /* 데크에 발을 들이면 걸어가던 것을 멈춘다(키로 움직일 때는 그대로) */
-  const onDeck=!!((world.yellSpot&&world.yellSpot(m.x,m.z))||(world.smashSpot&&world.smashSpot(m.x,m.z)>=0)||(world.kickSpot&&world.kickSpot(m.x,m.z)>=0)||(world.punchSpot&&world.punchSpot(m.x,m.z)>=0));
-  const tgtOn=!!((world.yellSpot&&world.yellSpot(m.tx,m.tz))||(world.smashSpot&&world.smashSpot(m.tx,m.tz)>=0)||(world.kickSpot&&world.kickSpot(m.tx,m.tz)>=0)||(world.punchSpot&&world.punchSpot(m.tx,m.tz)>=0));   // 목적지가 그 자리 안이면 끝까지 간다
+  const onDeck=!!((world.yellSpot&&world.yellSpot(m.x,m.z))||(world.smashSpot&&world.smashSpot(m.x,m.z)>=0)||(world.kickSpot&&world.kickSpot(m.x,m.z)>=0)||(world.punchSpot&&world.punchSpot(m.x,m.z)>=0)||(world.crumpleSpot&&world.crumpleSpot(m.x,m.z)>=0));
+  const tgtOn=!!((world.yellSpot&&world.yellSpot(m.tx,m.tz))||(world.smashSpot&&world.smashSpot(m.tx,m.tz)>=0)||(world.kickSpot&&world.kickSpot(m.tx,m.tz)>=0)||(world.punchSpot&&world.punchSpot(m.tx,m.tz)>=0)||(world.crumpleSpot&&world.crumpleSpot(m.tx,m.tz)>=0));   // 목적지가 그 자리 안이면 끝까지 간다
   if(onDeck&&!m.onDeck&&!(kf||kr)&&!tgtOn){ m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false; }
   m.onDeck=onDeck;
   const P=footPose(m.x,m.z);
@@ -443,20 +443,21 @@ function update(dt){
   alignFlats(figure,m.x,m.z);
   const haloK=m.sitting?clamp(S.sitTime/45,0,1)*.9+.1:0;
   figure.update(S.t,m.sitting,m.walking,m.breath,S.realm?S.realm.color:'#ffffff',haloK,S.breathOn&&S.mode==='scene',m.lie);
-  Yell.pose(figure); Yell.tick(dt); Smash.pose(figure); Smash.tick(dt); Kick.pose(figure); Kick.tick(dt); Punch.pose(figure); Punch.tick(dt);
-  if(S.mode==='scene'&&S.realm&&S.realm.dark) el.actRow.hidden=!$('yellBox').hidden||!$('smashBox').hidden||!$('kickBox').hidden||!$('punchBox').hidden||!$('punchPad').hidden||Yell.busy()||Smash.busy()||Kick.busy();   // 상자가 뜨면 버튼은 비켜 준다
+  Yell.pose(figure); Yell.tick(dt); Smash.pose(figure); Smash.tick(dt); Kick.pose(figure); Kick.tick(dt); Punch.pose(figure); Punch.tick(dt); Crumple.pose(figure); Crumple.tick(dt);
+  if(S.mode==='scene'&&S.realm&&S.realm.dark) el.actRow.hidden=!$('yellBox').hidden||!$('smashBox').hidden||!$('kickBox').hidden||!$('punchBox').hidden||!$('punchPad').hidden||!$('crumpleBox').hidden||!$('crumplePad').hidden||Crumple.busy()||Yell.busy()||Smash.busy()||Kick.busy();   // 상자가 뜨면 버튼은 비켜 준다
   Together.tick(dt,S.t);
 
   /* 카메라: 캐릭터 뒤에서 따라가고, 앉으면 가까워진다 */
   c.pitch=damp(c.pitch,c.pitchGoal,3,dt);
   c.dist=damp(c.dist,camGoal(),2.6,dt);
-  c.tgt.x=damp(c.tgt.x,m.x,9,dt); c.tgt.z=damp(c.tgt.z,m.z,9,dt);
-  c.tgt.y=damp(c.tgt.y,P.y+(m.sitting?1.05-.65*m.lieK:1.45-.5*m.swim),3,dt);
+  const F=S.camFocus;   /* 눈덩이처럼 따라가 볼 것이 있으면 카메라가 그쪽을 본다 */
+  c.tgt.x=damp(c.tgt.x,F?F.x:m.x,F?4:9,dt); c.tgt.z=damp(c.tgt.z,F?F.z:m.z,F?4:9,dt);
+  c.tgt.y=damp(c.tgt.y,F?F.y+1:P.y+(m.sitting?1.05-.65*m.lieK:1.45-.5*m.swim),F?4:3,dt);
   const d=c.dist*c.zoom, pt=Math.min(1.15,c.pitch+Math.max(0,c.zoom-1)*.22), cp=Math.cos(pt);   /* 멀어질수록 위에서 내려다본다 */
   c.pos.set(c.tgt.x+Math.sin(c.yaw)*cp*d,Math.max(.5,c.tgt.y+Math.sin(pt)*d),c.tgt.z+Math.cos(c.yaw)*cp*d);
   if(world.groundH){ const lo=Math.max(world.groundH(c.pos.x,c.pos.z),world.waterY)+.7; if(c.pos.y<lo) c.pos.y=lo; }
   camera.position.copy(c.pos);
-  const sk=Yell.shake()+Smash.shake()+Kick.shake()+Punch.shake(); if(sk){ camera.position.x+=(Math.random()-.5)*sk*2; camera.position.y+=(Math.random()-.5)*sk*2; camera.position.z+=(Math.random()-.5)*sk*2; }
+  const sk=Yell.shake()+Smash.shake()+Kick.shake()+Punch.shake()+Crumple.shake(); if(sk){ camera.position.x+=(Math.random()-.5)*sk*2; camera.position.y+=(Math.random()-.5)*sk*2; camera.position.z+=(Math.random()-.5)*sk*2; }
   camera.lookAt(c.tgt);
   CUT.uCam.value.copy(c.pos); CUT.uMe.value.set(m.x,P.y+(m.sitting?.5:.85),m.z);
 }

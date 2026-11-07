@@ -9,7 +9,7 @@ const Punch=(()=>{
   const cnt=box.querySelector('.ycount'), form=box.querySelector('.yrow'), inp=form.querySelector('input');
   form.addEventListener('submit',e=>{ e.preventDefault(); inp.blur(); start(); });
   /* 연타 판: 남은 시간 막대, 때린 수와 콤보, 커다란 [퍽!] */
-  const pad=document.createElement('div'); pad.id='punchPad'; pad.hidden=true;
+  const pad=document.createElement('div'); pad.id='punchPad'; pad.className='tapPad'; pad.hidden=true;
   pad.innerHTML='<div class="pbar"><i></i></div><p class="pstat"><b class="pn">0</b>대 <span class="pc"></span></p><button class="ppunch" type="button">퍽!</button><p class="presult"></p>';
   const bar=pad.querySelector('.pbar i'), pn=pad.querySelector('.pn'), pc=pad.querySelector('.pc'), btn=pad.querySelector('.ppunch'), res=pad.querySelector('.presult');
   btn.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); hit(); });

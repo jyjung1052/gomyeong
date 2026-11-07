@@ -34,7 +34,7 @@ function smashItem(kind){
     const scr=mesh(new THREE.SphereGeometry(.3,20,12,0,TAU,0,.5),M('#1f2a2a',{shininess:90,specular:0x88aaaa}),0,.27,.13); scr.rotation.x=Math.PI/2; scr.scale.set(.82,.7,.35); g.add(scr);
     g.add(mesh(new THREE.BoxGeometry(.5,.38,.02),M('#151918',{shininess:80}),-.02,.28,.252));
     [-.15,.15].forEach(x=>{ const a=mesh(new THREE.CylinderGeometry(.006,.006,.35,5),M('#999'),x,.62,-.05); a.rotation.z=x*3; g.add(a); });
-    g.add(mesh(new THREE.CylinderGeometry(.025,.025,.02,10),M('#c8b48a'),.25,.18,.26)).rotation.x=Math.PI/2;
+    { const knob=mesh(new THREE.CylinderGeometry(.025,.025,.02,10),M('#c8b48a'),.25,.18,.26); knob.rotation.x=Math.PI/2; g.add(knob); }
   }else if(kind==='monitor'){
     g.add(mesh(new THREE.BoxGeometry(.72,.44,.04),M(K.col,{shininess:30}),0,.4,0));
     g.add(mesh(new THREE.BoxGeometry(.66,.38,.005),M('#0d1a24',{shininess:120,specular:0x6688aa}),0,.4,.022));

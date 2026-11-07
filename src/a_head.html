@@ -108,19 +108,19 @@ body{
 .pill.act:active{transform:translateY(6px);box-shadow:0 2px 0 #8f5614,0 6px 12px rgba(0,0,0,.3)}
 #actRow[hidden]{display:none}
 .yellbox .yhint{margin:0;font-size:14px;color:#f3e9d2;opacity:.9}
-#punchPad{display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-#punchPad[hidden]{display:none}
-#punchPad .pbar{width:min(320px,80vw);height:10px;border-radius:999px;background:rgba(255,255,255,.55);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.2)}
-#punchPad .pbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#f5be52,#e0952e);transition:width .1s linear}
-#punchPad .pstat{margin:0;font-size:20px;color:#3a2a14;background:rgba(255,255,255,.75);padding:2px 14px;border-radius:999px}
-#punchPad .pstat b{font-size:28px}
-#punchPad .pc{color:#d2601a;font-weight:700}
-#punchPad .ppunch{width:150px;height:150px;border-radius:50%;border:none;font:inherit;font-size:44px;font-weight:700;color:#2a1d0c;background:radial-gradient(circle at 35% 30%,#fff3c4,#f5be52 55%,#d98a26);box-shadow:0 10px 0 #8f5614,0 18px 28px rgba(0,0,0,.35),inset 0 4px 0 rgba(255,255,255,.7);touch-action:manipulation}
-#punchPad .ppunch:active{transform:translateY(7px);box-shadow:0 3px 0 #8f5614,0 8px 14px rgba(0,0,0,.3),inset 0 4px 0 rgba(255,255,255,.7)}
-#punchPad .ppunch.bump{animation:pbump .12s}
+.tapPad{display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.tapPad[hidden]{display:none}
+.tapPad .pbar{width:min(320px,80vw);height:10px;border-radius:999px;background:rgba(255,255,255,.55);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.2)}
+.tapPad .pbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#f5be52,#e0952e);transition:width .1s linear}
+.tapPad .pstat{margin:0;font-size:20px;color:#3a2a14;background:rgba(255,255,255,.75);padding:2px 14px;border-radius:999px}
+.tapPad .pstat b{font-size:28px}
+.tapPad .pc{color:#d2601a;font-weight:700}
+.tapPad .ppunch{width:150px;height:150px;border-radius:50%;border:none;font:inherit;font-size:44px;font-weight:700;color:#2a1d0c;background:radial-gradient(circle at 35% 30%,#fff3c4,#f5be52 55%,#d98a26);box-shadow:0 10px 0 #8f5614,0 18px 28px rgba(0,0,0,.35),inset 0 4px 0 rgba(255,255,255,.7);touch-action:manipulation}
+.tapPad .ppunch:active{transform:translateY(7px);box-shadow:0 3px 0 #8f5614,0 8px 14px rgba(0,0,0,.3),inset 0 4px 0 rgba(255,255,255,.7)}
+.tapPad .ppunch.bump{animation:pbump .12s}
 @keyframes pbump{50%{transform:scale(.92) translateY(5px)}}
-#punchPad .ppunch[hidden]{display:none}
-#punchPad .presult{margin:0;font-size:24px;font-weight:700;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.45)}
+.tapPad .ppunch[hidden]{display:none}
+.tapPad .presult{margin:0;font-size:24px;font-weight:700;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.45)}
 .yellbox .ycount{margin:-4px 0 0;color:#ffe9a8;font-size:15px}
 .yellbox .ycount[hidden]{display:none}
 .yellbox .yq{margin:0;color:#fffbe8;font-family:var(--display);font-weight:700;font-size:22px}
@@ -165,10 +165,10 @@ body{
 .yellbox .pill.ychip,.yellbox.actbox .pill.ychip{font-size:13px;min-height:32px;padding:4px 11px;box-shadow:0 3px 0 #b9a77c,0 5px 9px rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.9)}
 .yellbox .yme input,.yellbox.actbox .yrow input{min-height:36px}
 .yellbox .yme .pill,.yellbox.actbox .yrow .pill:not(.ygo){min-height:36px}
-#punchPad .ppunch{width:112px;height:112px;font-size:32px}
-#punchPad .pstat{font-size:15px}
-#punchPad .pstat b{font-size:21px}
-#punchPad .presult{font-size:19px}
+.tapPad .ppunch{width:112px;height:112px;font-size:32px}
+.tapPad .pstat{font-size:15px}
+.tapPad .pstat b{font-size:21px}
+.tapPad .presult{font-size:19px}
 
 /* ---- 윗줄: 모든 안내·버튼을 같은 높이(36px)의 둥근 네모로 ---- */
 .top .pill,.top .pillbox,.top .chip,.top .who{height:36px;min-height:36px;box-sizing:border-box;border-radius:10px;display:flex;align-items:center;padding:0 12px;font-size:13px;line-height:1}

@@ -24,7 +24,7 @@ const REALMS=[
   {id:'spout',name:'용오름',short:'이불킥',line:'구름 위 침대에서 이불킥',color:'#6f8fe0',dark:true},
   {id:'hail',name:'우박',short:'베개 때리기',line:'베개 가득한 방에서 연타',color:'#b9c8d8',dark:true},
   {id:'quake',name:'지진',short:'쿵쿵 발 구르기',line:'발 굴러 땅 흔들기',color:'#b0824e',dark:true,soon:true},
-  {id:'avalanche',name:'눈사태',short:'와르르 무너뜨리기',line:'쌓인 것 무너뜨리기',color:'#dce6f0',dark:true,soon:true},
+  {id:'avalanche',name:'눈사태',short:'구겨 던지기',line:'걱정을 구겨 설산 아래로',color:'#dce6f0',dark:true},
   {id:'gale',name:'질풍',short:'미친 듯이 달리기',line:'트랙을 미친 듯이 달리기',color:'#e0673f',dark:true,soon:true},
   {id:'downpour',name:'장대비',short:'실컷 울기',line:'창가에서 실컷 울기',color:'#5f86a8',dark:true,soon:true}
 ];
@@ -291,8 +291,24 @@ function buildFigure(){
     brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066;
     mouth.visible=k>.4||o.up>0; mouth.scale.set(1.1,.6+.7*Math.max(k,o.up?1:0),.5);
   };
+  /* 종이 구기기와 던지기. o.mode: 'knead'(두 손으로 와작와작, o.k는 한 번 쥘 때의 힘) · 'throw'(o.u 0~1 크게 휘둘러 던짐). o=null이면 원래대로 */
+  const crumple=(t,o)=>{
+    if(!o){ [armL,armR].forEach(a=>{ a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
+      mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
+    if(o.mode==='knead'){ const k=o.k, j=Math.sin(t*30)*.04*k;
+      armL.rotation.set(-1.05+j,0,.5+.12*k); armR.rotation.set(-1.05-j,0,-.5-.12*k);
+      armL.fore.rotation.set(-1.0-.35*k,0,0); armR.fore.rotation.set(-1.0-.35*k,0,0);
+      upper.rotation.set(.32+.06*k,0,0); head.rotation.set(.35,0,0);
+      brows[0].rotation.z=-.35; brows[1].rotation.z=.35; brows[0].position.y=brows[1].position.y=.068; mouth.visible=k>.3; mouth.scale.set(1.2,.35,.5); }
+    else{ const u=o.u, wind=Math.min(1,u/.45), fling=u<.45?0:Math.min(1,(u-.45)/.15), back=u<.75?0:(u-.75)/.25;
+      armR.rotation.set(lerp(lerp(-.3,-2.9,wind),-1.3,fling)*(1-back),0,-.15); armR.fore.rotation.set(lerp(-1.2,-.1,fling)*(1-back),0,0);
+      armL.rotation.set(lerp(-.4,-1.1,wind)*(1-back),0,.3); armL.fore.rotation.set(-.5*(1-back),0,0);
+      upper.rotation.set(lerp(-.2*wind,.35,fling)*(1-back),lerp(.45*wind,-.3,fling)*(1-back),0);
+      brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066; mouth.visible=fling>0&&back<1; mouth.scale.set(1.1,1.1,.5); }
+  };
+  const rightHand=()=>{ const v=new THREE.Vector3(0,-.33,.08); armR.fore.localToWorld(v); return v; };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch,
+    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch, crumple, rightHand,
     limbs:[[legL,new THREE.Vector3(0,-.92,.2)],[legR,new THREE.Vector3(0,-.92,.2)],[armL,new THREE.Vector3(0,-.62,.08)],[armR,new THREE.Vector3(0,-.62,.08)]],
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
