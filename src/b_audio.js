@@ -328,6 +328,11 @@ const Sound=(()=>{
       };
       tick();
     },
+    quake(sc){
+      /* 붉은 평원: 마른 바람과 먼 새소리 */
+      const bp=mk.filt('bandpass',500,.5); const b=mk.bed(sc,noiseB,[bp],.1); mk.lfo(sc,.06,.04,b.gain);
+      mk.every(sc,9,20,()=>{ const f=rnd(1800,2600); tone(sc,f,f*.7,rnd(.25,.4),.012,'sine',.7,rnd(-.7,.7)); });
+    },
     avalanche(sc){
       /* 설산 꼭대기: 차갑게 휘파람 부는 바람과 사락사락 눈가루 */
       const bp=mk.filt('bandpass',900,2.5); mk.bed(sc,noiseW,[bp],.03); mk.lfo(sc,.07,500,bp.frequency);
@@ -545,6 +550,31 @@ const Sound=(()=>{
     const fg=ctx.createGain(); fg.gain.setValueAtTime(0,t+.02); fg.gain.linearRampToValueAtTime(.05*p,t+.06); fg.gain.exponentialRampToValueAtTime(.0001,t+.4);
     f.connect(hp); hp.connect(fg); fg.connect(sc.bus); f.start(t+.02,rnd(0,2)); f.stop(t+.45);
   }
+  /* 발 구르기: 땅이 울리는 묵직한 쿵, 흔들림이 커질수록 낮게 깔리는 지진 울림 */
+  function stomp(p){
+    if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime;
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(70+30*p,t); o.frequency.exponentialRampToValueAtTime(28,t+.35);
+    const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(.55+.4*p,t+.008); og.gain.exponentialRampToValueAtTime(.0001,t+.5+p*.4);
+    o.connect(og); og.connect(sc.bus); o.start(t); o.stop(t+1);
+    const s=ctx.createBufferSource(); s.buffer=noiseB; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=320+400*p;
+    const sg=ctx.createGain(); sg.gain.setValueAtTime(0,t); sg.gain.linearRampToValueAtTime(.5*p+.2,t+.01); sg.gain.exponentialRampToValueAtTime(.0001,t+.4+p*.5);
+    s.connect(lp); lp.connect(sg); sg.connect(sc.bus); const w=ctx.createGain(); w.gain.value=.4; sg.connect(w); w.connect(sc.wet); s.start(t,rnd(0,2)); s.stop(t+1.2);
+    for(let i=0;i<Math.round(3+p*8);i++) sc.timers.push(setTimeout(()=>hit(sc,1500,4000,2,rnd(.02,.06)*p,rnd(.01,.03)),rnd(30,350)));   /* 자갈 튀는 소리 */
+  }
+  let qN=null;
+  function quakeSet(v){
+    if(!ctx||!cur) return; const t=ctx.currentTime;
+    if(!qN&&v>.05){ const s=ctx.createBufferSource(); s.buffer=noiseB; s.loop=true; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=120; const g=ctx.createGain(); g.gain.value=0;
+      s.connect(lp); lp.connect(g); g.connect(cur.bus); s.start(t,rnd(0,2)); qN={s,g,lp,sc:cur}; }
+    if(qN){ qN.g.gain.setTargetAtTime(v*.9,t,.15); qN.lp.frequency.setTargetAtTime(90+260*v,t,.2);
+      if(v<.02&&qN.g.gain.value<.01){ qN.s.stop(); qN=null; } }
+  }
+  function bigQuake(){ if(!ctx||!cur) return; stomp(1.4); crack(cur,ctx.currentTime,.6); avalanche(); }
+  /* 나무 블록이 와르르: 딱딱 부딪히고 굴러가는 소리 */
+  function blocks(n){
+    if(!ctx||!cur) return; const sc=cur;
+    for(let i=0;i<Math.min(16,n+3);i++) sc.timers.push(setTimeout(()=>{ hit(sc,700,2200,4,rnd(.06,.16),rnd(.02,.05)); if(Math.random()<.5) tone(sc,rnd(500,900),rnd(450,850),rnd(.04,.08),rnd(.02,.05),'triangle',.3,rnd(-.6,.6)); },rnd(0,700)));
+  }
   /* 종이 찢기: 긋는 동안 섬유가 뜯기는 '찌이익'(빠를수록 밝고 크게), 다 갈라질 때 '쫙!' */
   let tearN=null;
   function tearOn(){
@@ -626,7 +656,7 @@ const Sound=(()=>{
     }
   }
   return {
-    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche, tearOn, tearSet, tearOff, rip,
+    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche, tearOn, tearSet, tearOff, rip, stomp, quakeSet, bigQuake, blocks,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }

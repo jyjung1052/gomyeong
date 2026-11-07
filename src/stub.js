@@ -12,7 +12,7 @@ let _cb=null; const sent=[];
 const fakeRoom={connected:()=>true,onPeers:f=>{_cb=f;},peers:()=>[],presence:async p=>{sent.push(p);}};
 global.claude={use:async n=>n==='room'?fakeRoom:null};
 global.__sent=sent; global.__push=peers=>_cb&&_cb({peers});
-const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm,Yell,Smash,Kick,Punch,Tear,activate};})();');
+const src=require('fs').readFileSync(require('path').join(__dirname,'..','dist','app.js'),'utf8').replace(/\}\)\(\);\s*$/,'globalThis.__T={setLie,Together,BUILD,S,update,hub,figure,enterRealm,setSit,goDoor,leaveRealm,Yell,Smash,Kick,Punch,Tear,Stomp,activate};})();');
 (0,eval)(src);
 const T=globalThis.__T;
 let n=0;
@@ -76,4 +76,10 @@ T.S.mode='hub'; T.goDoor(2); T.update(.016);
   T.Tear.begin('야근'); for(let i=0;i<40;i++) T.update(.05); w.tearBits(50,T.S.me); for(let i=0;i<60;i++) T.update(.05);
   T.Tear.close(); for(let i=0;i<5;i++) T.update(.05);
   console.log('TEAR_OK'); T.S.mode='hub'; T.activate(T.hub); }
+/* 지진: 쿵쿵 연타로 규모를 올려 대지진까지 */
+{ const w=T.BUILD.quake(); T.activate(w); T.S.mode='scene'; T.S.realm={id:'quake',color:'#b0824e',dark:true};
+  w.onAct(); if(!T.Stomp.busy()) throw new Error('stomp not open');
+  for(let i=0;i<220;i++){ if(i%2===0) T.Stomp.stomp(); T.update(.05); }
+  for(let i=0;i<300;i++) T.update(.05);
+  T.Stomp.close(); console.log('STOMP_OK'); T.S.mode='hub'; T.activate(T.hub); }
 console.log('STUB_RUN_OK scenes:',n);
