@@ -444,7 +444,7 @@ function update(dt){
   const haloK=m.sitting?clamp(S.sitTime/45,0,1)*.9+.1:0;
   figure.update(S.t,m.sitting,m.walking,m.breath,S.realm?S.realm.color:'#ffffff',haloK,S.breathOn&&S.mode==='scene',m.lie);
   Yell.pose(figure); Yell.tick(dt); Smash.pose(figure); Smash.tick(dt); Kick.pose(figure); Kick.tick(dt); Punch.pose(figure); Punch.tick(dt); Tear.pose(figure); Tear.tick(dt); Stomp.pose(figure); Stomp.tick(dt);
-  if(S.mode==='scene'&&S.realm&&S.realm.dark) el.actRow.hidden=!$('yellBox').hidden||!$('smashBox').hidden||!$('kickBox').hidden||!$('punchBox').hidden||!$('punchPad').hidden||!$('tearBox').hidden||!$('tearLayer').hidden||!$('stompPad').hidden||Tear.busy()||Yell.busy()||Smash.busy()||Kick.busy();   // 상자가 뜨면 버튼은 비켜 준다
+  if(S.mode==='scene'&&S.realm&&S.realm.dark) el.actRow.hidden=!$('yellBox').hidden||!$('smashBox').hidden||!$('kickBox').hidden||!$('punchBox').hidden||!$('punchPad').hidden||!$('tearBox').hidden||Tear.isOpen()&&Tear.busy()||!$('stompPad').hidden||Tear.busy()||Yell.busy()||Smash.busy()||Kick.busy();   // 상자가 뜨면 버튼은 비켜 준다
   Together.tick(dt,S.t);
 
   /* 카메라: 캐릭터 뒤에서 따라가고, 앉으면 가까워진다 */

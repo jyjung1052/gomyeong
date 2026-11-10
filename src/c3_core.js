@@ -322,8 +322,19 @@ function buildFigure(){
     brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066; mouth.visible=o.level>.3; mouth.scale.set(1.1,.5+.6*o.level,.5);
   };
   const rightHand=()=>{ const v=new THREE.Vector3(0,-.33,.08); armR.fore.localToWorld(v); return v; };
+  const leftHand=()=>{ const v=new THREE.Vector3(0,-.33,.08); armL.fore.localToWorld(v); return v; };
+  /* 팔·몸 자세를 숫자로 바로 정한다(연속 연출용). o=null이면 원래대로 */
+  const armsPose=o=>{
+    if(!o){ [armL,armR].forEach(a=>{ a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
+      mouth.visible=false; eyesOpen.visible=true; eyesClosed.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
+    armL.rotation.set(o.lx,0,o.lz); armR.rotation.set(o.rx,0,o.rz); armL.fore.rotation.set(o.lf,0,0); armR.fore.rotation.set(o.rf,0,0);
+    upper.rotation.set(o.lean||0,0,0); head.rotation.set(o.head||0,0,0);
+    const sh=o.eyes==='shut'; eyesOpen.visible=!sh; eyesClosed.visible=sh;
+    brows[0].rotation.z=-(o.brow||0); brows[1].rotation.z=(o.brow||0); brows[0].position.y=brows[1].position.y=.082-.016*(o.brow?1:0);
+    mouth.visible=(o.mouth||0)>.1; mouth.scale.set(1.1,.4+(o.mouth||0),.5);
+  };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch, crumple, stomp, rightHand,
+    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch, crumple, stomp, rightHand, leftHand, armsPose,
     limbs:[[legL,new THREE.Vector3(0,-.92,.2)],[legR,new THREE.Vector3(0,-.92,.2)],[armL,new THREE.Vector3(0,-.62,.08)],[armR,new THREE.Vector3(0,-.62,.08)]],
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
