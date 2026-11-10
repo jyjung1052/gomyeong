@@ -3,9 +3,7 @@ const AV_DECK=16, AV_N=8, AV_SLOPE=.55;
 const AV_WORRY=['카드값','내일 회의','그 사람 말','다이어트','야근','시험','잔소리'];
 function avalancheH(x,z){
   const r=Math.hypot(x,z);
-  if(r<AV_DECK) return .02*nz(x*.3,1,z*.3);
-  const d=r-AV_DECK;
-  return -d*AV_SLOPE*(1+.12*nz(x*.01,2,z*.01))+1.6*nz(x*.04,3,z*.04)*smooth(0,30,d)-Math.min(d,4)*.15;
+  return .04*nz(x*.25,1,z*.25)+smooth(AV_DECK+4,AV_DECK+70,r)*(4+3*nz(x*.03,2,z*.03))+smooth(AV_DECK+2,AV_DECK+8,r)*.3*nz(x*.1,5,z*.1);
 }
 /* 쓴 글씨가 보이는 종이 한 장(구길수록 오그라들어 뭉치가 된다) */
 function paperTex(text){
@@ -20,36 +18,64 @@ function puffTex(){
 }
 function buildAvalanche(){
   const g=new THREE.Group(), R=rng(31);
-  g.add(skyDome('#3f7fd0','#86b6ea','#e8f2fb'));
-  g.add(new THREE.HemisphereLight(0xeaf3ff,0x8d9db3,.72));
-  const sunL=new THREE.DirectionalLight(0xfff3e0,.6); sunL.position.set(40,60,30); g.add(sunL);
-  g.add(glowSprite('#fff6dc',80,220,160,-300,.8));
-  /* 설산: 꼭대기 전망대에서 사방으로 길게 내려가는 눈 비탈 */
-  const T=new THREE.PlaneGeometry(560,560,200,200); T.rotateX(-Math.PI/2);
-  const tp=T.attributes.position, tc=new Float32Array(tp.count*3), c=new THREE.Color(), S1=new THREE.Color('#eef2f8'), S2=new THREE.Color('#bfcde0'), RK=new THREE.Color('#6d7784');
+  /* ---- 햇살 드는 시골집 뒷마당: 잔디, 나무, 나무 울타리, 툇마루 ---- */
+  g.add(skyDome('#6fb2e6','#c4e2f6','#fff0d4'));
+  g.add(new THREE.HemisphereLight(0xfff3dc,0x6f8a48,.8));
+  const sunL=new THREE.DirectionalLight(0xffdca0,.85); sunL.position.set(-40,35,25); g.add(sunL);
+  g.add(glowSprite('#fff1c8',110,-260,120,170,.75));
+  /* 잔디 마당과 울타리 너머 완만한 언덕·밭 */
+  const T=new THREE.PlaneGeometry(420,420,170,170); T.rotateX(-Math.PI/2);
+  const tp=T.attributes.position, tc=new Float32Array(tp.count*3), c=new THREE.Color(), G1=new THREE.Color('#6e9c3e'), G2=new THREE.Color('#8fb84e'), G3=new THREE.Color('#b8c46a'), DIRT=new THREE.Color('#8a6a45');
   for(let i=0;i<tp.count;i++){ const x=tp.getX(i), z=tp.getZ(i), y=avalancheH(x,z); tp.setY(i,y);
-    const n=nz(x*.08,4,z*.08)*.5+.5, rock=Math.hypot(x,z)>AV_DECK+8?smooth(.78,.9,nz(x*.03,7,z*.03)*.5+.5):0;
-    c.copy(S2).lerp(S1,n).lerp(RK,rock*.7); tc[i*3]=c.r; tc[i*3+1]=c.g; tc[i*3+2]=c.b; }
+    const n=nz(x*.12,4,z*.12)*.5+.5, n2=nz(x*.5,9,z*.5)*.5+.5, r=Math.hypot(x,z);
+    c.copy(G1).lerp(G2,n).lerp(G3,smooth(.7,.95,n2)*.5);
+    if(r>AV_DECK+6&&Math.abs(Math.sin(x*.18))<.12&&z>0) c.lerp(DIRT,.35);   /* 울타리 너머 밭고랑 */
+    tc[i*3]=c.r; tc[i*3+1]=c.g; tc[i*3+2]=c.b; }
   T.setAttribute('color',new THREE.BufferAttribute(tc,3)); T.computeVertexNormals();
-  g.add(new THREE.Mesh(T,VC({shininess:14,specular:0x8899aa})));
-  /* 저 아래 구름 바다, 멀리 눈 덮인 봉우리들 */
-  const sea=mesh(new THREE.PlaneGeometry(2400,2400),M('#f4f7fc',{transparent:true,opacity:.92,fog:false}),0,-112,0); sea.rotation.x=-Math.PI/2; g.add(sea);
-  for(let i=0;i<16;i++){ const a=i/16*TAU+R()*.2, r=420+R()*160, h=90+R()*120;
-    const cg=new THREE.ConeGeometry(1,1,8,3), cp=cg.attributes.position; for(let k=0;k<cp.count;k++){ const y=cp.getY(k); if(y<.49){ const f=1+.3*nz(cp.getX(k)*3,i,cp.getZ(k)*3); cp.setX(k,cp.getX(k)*f); cp.setZ(k,cp.getZ(k)*f); } }
-    cg.computeVertexNormals(); const m=mesh(cg,M('#e9eef6',{flatShading:true}),Math.cos(a)*r,-110+h/2,Math.sin(a)*r); m.scale.set(70+R()*60,h,60+R()*50); g.add(m); }
-  /* 전망대: 나무 데크 바닥, 둘레 난간, 책상 */
-  const wood=M('#a77a52',{shininess:10}), woodD=M('#7d5a3b',{shininess:8});
-  const deck=mesh(new THREE.CylinderGeometry(AV_DECK,AV_DECK,.25,64),M('#c49a6c',{shininess:6}),0,-.1,0); g.add(deck);
-  const boards=[]; for(let i=0;i<40;i++){ const x=-AV_DECK+.8*i+.4; boards.push({x,y:.03,z:0,sx:1,sy:1,sz:2*Math.sqrt(Math.max(0,AV_DECK*AV_DECK-x*x))-.2,c:i%2?'#9c7350':'#ab815c'}); }
-  g.add(instances(new THREE.BoxGeometry(.76,.02,1),VC({vertexColors:false,shininess:6}),boards));
-  const posts=[]; for(let i=0;i<64;i++){ const a=i/64*TAU; posts.push({x:Math.cos(a)*(AV_DECK-.3),y:.55,z:Math.sin(a)*(AV_DECK-.3)}); }
-  g.add(instances(new THREE.BoxGeometry(.1,1.1,.1),woodD,posts));
-  const rail=new THREE.Mesh(new THREE.TorusGeometry(AV_DECK-.3,.06,6,128),wood); rail.rotation.x=Math.PI/2; rail.position.y=1.1; g.add(rail);
-  const rail2=new THREE.Mesh(new THREE.TorusGeometry(AV_DECK-.3,.04,6,128),wood); rail2.rotation.x=Math.PI/2; rail2.position.y=.6; g.add(rail2);
-  /* 가운데 작은 눈사람과 깃발 */
-  g.add(mesh(new THREE.SphereGeometry(.7,20,14),M('#ffffff',{shininess:20}),0,.6,0)); g.add(mesh(new THREE.SphereGeometry(.48,20,14),M('#ffffff',{shininess:20}),0,1.6,0));
-  { const nose=mesh(new THREE.ConeGeometry(.07,.35,10),M('#f08a3c'),0,1.62,.5); nose.rotation.x=Math.PI/2; g.add(nose); }
-  const scarf=mesh(new THREE.TorusGeometry(.42,.09,8,20),M('#e0565b'),0,1.22,0); scarf.rotation.x=Math.PI/2; g.add(scarf);
+  g.add(new THREE.Mesh(T,VC({shininess:3})));
+  /* 잔디 포기: 바람에 살랑 */
+  const GU={value:0};
+  const grassMat=swayMat(new THREE.MeshPhongMaterial({vertexColors:true,side:THREE.DoubleSide,shininess:0}),GU,.08); grassMat.userData.noCut=true;
+  const tufts=[[],[],[]]; for(let i=0;i<1300;i++){ const a=R()*TAU, r=Math.sqrt(R())*(AV_DECK+30), x=Math.cos(a)*r, z=Math.sin(a)*r; if(z<-AV_DECK+1&&Math.abs(x)<9) continue;
+    const s=.18+R()*.16; tufts[i%3].push({x,y:avalancheH(x,z),z,sx:s,sy:s*(.8+R()*.5),sz:s,ry:R()*6}); }
+  [tuftGeo(11,14,.8,1.2,.4,.1),tuftGeo(12,12,.7,1.1,.45,.15),tuftGeo(13,16,.9,1.3,.38,.05)].forEach((tg,i)=>g.add(instances(tg,grassMat,tufts[i])));
+  /* 시골집: 하얀 벽, 나무 기둥, 기와 지붕, 따뜻한 창, 툇마루 */
+  const wood=M('#9a6b43',{shininess:8}), woodD=M('#6e4a2d',{shininess:6});
+  const hz=-AV_DECK-4.2;
+  g.add(mesh(new THREE.BoxGeometry(15,4.2,7),M('#f3ead8',{shininess:4}),0,2.1,hz-1.5));
+  [-7.2,-3.6,0,3.6,7.2].forEach(x=>g.add(mesh(new THREE.BoxGeometry(.32,4.3,.32),woodD,x,2.15,hz+2.05)));
+  g.add(mesh(new THREE.BoxGeometry(15.2,.28,.36),woodD,0,4.1,hz+2.05));
+  const roof=mesh(new THREE.CylinderGeometry(4.6,4.6,17,3,1),M('#5d4a3e',{shininess:10,flatShading:true}),0,5.6,hz-1.5); roof.rotation.z=Math.PI/2; roof.rotation.x=Math.PI/2; roof.scale.set(1,1,.62); g.add(roof);
+  g.add(mesh(new THREE.BoxGeometry(.9,2.2,.9),M('#a88e78'),4.5,6.6,hz-2.2));
+  [-5.4,-1.8,1.8,5.4].forEach(x=>{ g.add(mesh(new THREE.BoxGeometry(2.2,1.6,.08),M('#ffe2a8',{emissive:0x7a5520}),x,2.4,hz+2.03)); g.add(mesh(new THREE.BoxGeometry(.06,1.6,.1),woodD,x,2.4,hz+2.06)); g.add(mesh(new THREE.BoxGeometry(2.2,.06,.1),woodD,x,2.4,hz+2.06)); });
+  g.add(mesh(new THREE.BoxGeometry(15,.36,2.4),wood,0,.55,hz+3.2));                       /* 툇마루 */
+  [-7,-3.5,0,3.5,7].forEach(x=>g.add(mesh(new THREE.BoxGeometry(.22,.55,.22),woodD,x,.27,hz+4.2)));
+  g.add(mesh(new THREE.BoxGeometry(1.4,.12,.7),M('#d8c3a0'),-2.2,.78,hz+3.0));              /* 툇마루 위 방석 */
+  g.add(mesh(new THREE.CylinderGeometry(.18,.14,.28,12),M('#7a9bb5'),2.6,.86,hz+3.1));      /* 물 주전자 */
+  /* 나무 울타리: 집 쪽만 트이고 마당을 빙 두른다 */
+  const pickets=[], fr=AV_DECK-.4;
+  for(let i=0;i<150;i++){ const a=i/150*TAU, x=Math.cos(a)*fr, z=Math.sin(a)*fr; if(z<-fr*.62) continue; pickets.push({x,y:.55,z,sx:1,sy:1+((i%3)?0:.12),sz:1,ry:-a,c:choice(R,['#c9a477','#bf9a6c','#d2ae80'])}); }
+  g.add(instances(new THREE.BoxGeometry(.12,1.1,.05),VC({vertexColors:false,shininess:6}),pickets));
+  const railA=Math.acos(.62);
+  [.35,.85].forEach(y=>{ const rl=new THREE.Mesh(new THREE.TorusGeometry(fr,.035,5,120,TAU-2*(Math.PI/2-railA)-.1),wood); rl.rotation.x=Math.PI/2; rl.rotation.z=-(Math.PI/2+railA)+.05; rl.position.y=y; g.add(rl); });
+  /* 큰 나무들(울타리 안 귀퉁이에 둘, 바깥에 여럿)과 덤불, 꽃 */
+  const trees=[{x:-11,z:5,s:1.25},{x:10.5,z:-6,s:1.1}]; for(let i=0;i<34;i++){ const a=R()*TAU, r=AV_DECK+5+R()*45; const x=Math.cos(a)*r, z=Math.sin(a)*r; if(z<-AV_DECK-8&&Math.abs(x)<14) continue; trees.push({x,z,s:.9+R()*.8}); }
+  g.add(instances(broadGeo(),VC(),trees.map(t=>({x:t.x,y:avalancheH(t.x,t.z)-.1,z:t.z,sx:t.s,sy:t.s*(.9+R()*.3),sz:t.s,ry:R()*6}))));
+  const bushes=[]; for(let i=0;i<40;i++){ const a=R()*TAU, x=Math.cos(a)*(fr-.9), z=Math.sin(a)*(fr-.9); if(z<-fr*.55) continue; const s=.45+R()*.4; bushes.push({x,y:0,z,sx:s*1.2,sy:s,sz:s*1.2,ry:R()*6}); }
+  g.add(instances(bushGeo(),VC(),bushes));
+  const flowers=[]; for(let i=0;i<160;i++){ const a=R()*TAU, x=Math.cos(a)*(fr-1.6-R()*1.4), z=Math.sin(a)*(fr-1.6-R()*1.4); if(z<-fr*.55) continue; flowers.push({x,y:.22+R()*.12,z,sx:.07,sy:.07,sz:.07,c:choice(R,['#ffffff','#ffd84a','#ff8fb1','#b08cff','#ff7a4a'])}); }
+  g.add(instances(new THREE.IcosahedronGeometry(1,0),VC({vertexColors:false,shininess:10}),flowers));
+  /* 빨랫줄과 하얀 이불 홑청 */
+  [[-9,-4],[-4,-9.5]].forEach(([x,z])=>g.add(mesh(new THREE.CylinderGeometry(.06,.07,2.4,8),woodD,x,1.2,z)));
+  { const p1=new THREE.Vector3(-9,2.2,-4), p2=new THREE.Vector3(-4,2.2,-9.5), L=p1.distanceTo(p2), mid=p1.clone().add(p2).multiplyScalar(.5);
+    const line=mesh(new THREE.CylinderGeometry(.01,.01,L,4),M('#eeeeee'),mid.x,2.18,mid.z); line.rotation.z=Math.PI/2; line.rotation.y=Math.atan2(p1.z-p2.z,p2.x-p1.x); g.add(line);
+    [.3,.62].forEach(k=>{ const q=p1.clone().lerp(p2,k); const sh=mesh(new THREE.PlaneGeometry(1.6,1.2,6,4),M(k<.5?'#ffffff':'#f7e9c8',{side:THREE.DoubleSide}),q.x,1.55,q.z); sh.rotation.y=Math.atan2(p1.z-p2.z,p2.x-p1.x); g.add(sh); }); }
+  /* 텃밭 */
+  g.add(mesh(new THREE.BoxGeometry(4.2,.12,2.6),M('#7a5a3a'),8,.03,6));
+  const sprouts=[]; for(let i=0;i<5;i++) for(let k=0;k<9;k++) sprouts.push({x:6.2+k*.45,y:.16,z:5+i*.5,sx:.12,sy:.12,sz:.12,c:'#5f9a3a'});
+  g.add(instances(new THREE.IcosahedronGeometry(1,0),VC({vertexColors:false,flatShading:true}),sprouts));
+  /* 살랑이는 나비 */
+  const motes=points(40,0,'#fff3c0',.12,null,()=>[(R()-.5)*26,.6+R()*2.2,(R()-.5)*26]); g.add(motes);
   /* 눈: 찢은 종이 조각이 눈송이가 되어 펑펑. 많이 찢을수록 굵고 많이 내린다 */
   const flakeTex=canvasTex(64,64,(c2,w,h)=>{ const gr=c2.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2); gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.55,'rgba(255,255,255,.85)'); gr.addColorStop(1,'rgba(255,255,255,0)'); c2.fillStyle=gr; c2.fillRect(0,0,w,h); });
   const FN=1600, fpos=new Float32Array(FN*3), fv=[...Array(FN)].map(()=>({life:0,x:0,y:-99,z:0,vx:0,vy:0,vz:0,ph:0}));
@@ -131,8 +157,8 @@ function buildAvalanche(){
     shardIM.forEach((im,k)=>{ if(dirty[k]) im.instanceMatrix.needsUpdate=true; });
   }
   { const z=new THREE.Object3D(); z.scale.setScalar(0); z.updateMatrix(); shardIM.forEach(im=>{ for(let i=0;i<SN;i++) im.setMatrixAt(i,z.matrix); im.instanceMatrix.needsUpdate=true; }); }
-  const avoid=[{x:0,z:0,r:1.1}];
-  return {group:g,fog:{c:0xdfe9f5,n:60,f:520},bg:0xdfe9f5,bounds:{circle:[0,0,AV_DECK-1.1]},avoid,
+  const avoid=[{x:-11,z:5,r:.9},{x:10.5,z:-6,r:.8},{x:8,z:6,r:2.2},{x:-9,z:-4,r:.3},{x:-4,z:-9.5,r:.3}];
+  return {group:g,fog:{c:0xf2ead8,n:45,f:240},bg:0xf2ead8,bounds:{circle:[0,0,AV_DECK-2]},avoid,
     spawn:{x:0,z:6},spawnJ:[2,2],groundH:avalancheH,waterY:-1000,pitch:.26,pitchSit:.14,
     /* 아래 [종이 찢기] 버튼: 걸어갈 필요 없이 그 자리에서 */
     onAct(){ if(typeof Tear!=='undefined') Tear.open(); },
@@ -178,7 +204,7 @@ function buildAvalanche(){
       spawn((me?me.x:0)+Math.cos(a)*r,8+Math.random()*10,(me?me.z:0)+Math.sin(a)*r,(Math.random()-.5)*.6,-.8-Math.random()*.6,(Math.random()-.5)*.6,14); }
       snowAmt+=n/300; rate=Math.min(1,rate+n/200); },
     update(t,dt,me){
-      stepShards(t,dt);
+      stepShards(t,dt); GU.value=t;
       /* 찢은 만큼 한동안 계속 펑펑 내리다가 서서히 그친다 */
       if(rate>0&&me){ const n=Math.floor(rate*90*dt+Math.random()); for(let k=0;k<n;k++){ const a=Math.random()*TAU, r=Math.sqrt(Math.random())*22; spawn(me.x+Math.cos(a)*r,10+Math.random()*8,me.z+Math.sin(a)*r,(Math.random()-.5)*.5,-.9-Math.random()*.5,(Math.random()-.5)*.5,16); }
         rate=Math.max(0,rate-dt*.03); }

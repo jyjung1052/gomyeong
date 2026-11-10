@@ -118,6 +118,7 @@ body{
 .tapPad .ppunch{width:150px;height:150px;border-radius:50%;border:none;font:inherit;font-size:44px;font-weight:700;color:#2a1d0c;background:radial-gradient(circle at 35% 30%,#fff3c4,#f5be52 55%,#d98a26);box-shadow:0 10px 0 #8f5614,0 18px 28px rgba(0,0,0,.35),inset 0 4px 0 rgba(255,255,255,.7);touch-action:manipulation}
 .tapPad .ppunch:active{transform:translateY(7px);box-shadow:0 3px 0 #8f5614,0 8px 14px rgba(0,0,0,.3),inset 0 4px 0 rgba(255,255,255,.7)}
 .tapPad .ppunch.bump{animation:pbump .12s}
+.tapPad .ppunch.final{font-size:32px;color:#fff;background:radial-gradient(circle at 35% 30%,#ffd0c0,#ff7a55 55%,#d8402a);box-shadow:0 10px 0 #8a2414,0 18px 28px rgba(0,0,0,.35),inset 0 4px 0 rgba(255,255,255,.6)}
 @keyframes pbump{50%{transform:scale(.92) translateY(5px)}}
 .tapPad .ppunch[hidden]{display:none}
 .tapPad .presult{margin:0;font-size:24px;font-weight:700;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.45)}
@@ -179,6 +180,14 @@ body{
 .top .chip b:empty,.top .chip small:empty{display:none}
 #hubHint{border-radius:10px}
 .yellbox .ycancel{min-height:30px;font-size:12px;padding:2px 12px;opacity:.85}
+/* 발 구르기·종이 찢기 판: 버튼을 맨 아래로, 작게 — 캐릭터 발과 동작을 가리지 않게 */
+#stompPad,#tearPad{gap:5px}
+#stompPad .pstat,#tearPad .pstat{order:1}
+#stompPad .pbar,#tearPad .pbar{order:2;height:8px}
+#stompPad .presult,#tearPad .presult{order:3;font-size:15px}
+#stompPad .ppunch,#tearPad .ppunch{order:4;width:92px;height:92px;font-size:28px;margin-top:4px}
+#tearPad .ppunch.final{font-size:22px}
+#stompPad .pclose,#tearPad .pclose{order:5}
 .tapPad .pclose{min-height:30px;font-size:12px;padding:2px 14px;border-radius:10px}
 </style>
 

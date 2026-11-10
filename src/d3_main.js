@@ -169,7 +169,7 @@ function enterRealm(realm){
     /* 여럿이 한곳에 겹쳐 서지 않도록 들어서는 자리를 조금씩 흩는다 */
     if(w.spawnJ){ const J=w.spawnJ; if(J.length===1){ const a=Math.random()*TAU, r=Math.sqrt(Math.random())*J[0]; m.x+=Math.cos(a)*r; m.z+=Math.sin(a)*r; } else { m.x+=(Math.random()*2-1)*J[0]; m.z+=(Math.random()*2-1)*J[1]; } }
     m.tx=m.x; m.tz=m.z; m.heading=Math.PI;
-    S.cam.yaw=0; S.cam.pitch=S.cam.pitchGoal=w.pitch||.32; S.cam.zoom=1; S.camFocus=null;
+    S.cam.yaw=0; S.cam.pitch=S.cam.pitchGoal=w.pitch||.32; S.cam.zoom=1; S.camFocus=null; S.camDrop=0;
     clampMe(); snapCam();
     Sound.setSeated(false); Sound.enter(realm.id);
     el.timer.textContent='앉은 시간 00:00';
@@ -444,7 +444,7 @@ function update(dt){
   const haloK=m.sitting?clamp(S.sitTime/45,0,1)*.9+.1:0;
   figure.update(S.t,m.sitting,m.walking,m.breath,S.realm?S.realm.color:'#ffffff',haloK,S.breathOn&&S.mode==='scene',m.lie);
   Yell.pose(figure); Yell.tick(dt); Smash.pose(figure); Smash.tick(dt); Kick.pose(figure); Kick.tick(dt); Punch.pose(figure); Punch.tick(dt); Tear.pose(figure); Tear.tick(dt); Stomp.pose(figure); Stomp.tick(dt);
-  if(S.mode==='scene'&&S.realm&&S.realm.dark) el.actRow.hidden=!$('yellBox').hidden||!$('smashBox').hidden||!$('kickBox').hidden||!$('punchBox').hidden||!$('punchPad').hidden||!$('tearBox').hidden||Tear.isOpen()&&Tear.busy()||!$('stompPad').hidden||Tear.busy()||Yell.busy()||Smash.busy()||Kick.busy();   // 상자가 뜨면 버튼은 비켜 준다
+  if(S.mode==='scene'&&S.realm&&S.realm.dark) el.actRow.hidden=!$('yellBox').hidden||!$('smashBox').hidden||!$('kickBox').hidden||!$('punchBox').hidden||!$('punchPad').hidden||!$('tearBox').hidden||!$('tearPad').hidden||Tear.isOpen()&&Tear.busy()||!$('stompPad').hidden||Tear.busy()||Yell.busy()||Smash.busy()||Kick.busy();   // 상자가 뜨면 버튼은 비켜 준다
   Together.tick(dt,S.t);
 
   /* 카메라: 캐릭터 뒤에서 따라가고, 앉으면 가까워진다 */
@@ -452,7 +452,7 @@ function update(dt){
   c.dist=damp(c.dist,camGoal(),2.6,dt);
   const F=S.camFocus;   /* 눈덩이처럼 따라가 볼 것이 있으면 카메라가 그쪽을 본다 */
   c.tgt.x=damp(c.tgt.x,F?F.x:m.x,F?4:9,dt); c.tgt.z=damp(c.tgt.z,F?F.z:m.z,F?4:9,dt);
-  c.tgt.y=damp(c.tgt.y,F?F.y+1:P.y+(m.sitting?1.05-.65*m.lieK:1.45-.5*m.swim),F?4:3,dt);
+  c.tgt.y=damp(c.tgt.y,F?F.y+1:P.y+(m.sitting?1.05-.65*m.lieK:1.45-.5*m.swim)-(S.camDrop||0),F?4:3,dt);   /* camDrop: 아래 버튼판 위로 캐릭터 전신이 보이게 시선을 낮춘다 */
   const d=c.dist*c.zoom, pt=Math.min(1.15,c.pitch+Math.max(0,c.zoom-1)*.22), cp=Math.cos(pt);   /* 멀어질수록 위에서 내려다본다 */
   c.pos.set(c.tgt.x+Math.sin(c.yaw)*cp*d,Math.max(.5,c.tgt.y+Math.sin(pt)*d),c.tgt.z+Math.cos(c.yaw)*cp*d);
   if(world.groundH){ const lo=Math.max(world.groundH(c.pos.x,c.pos.z),world.waterY)+.7; if(c.pos.y<lo) c.pos.y=lo; }

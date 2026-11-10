@@ -73,7 +73,7 @@ T.S.mode='hub'; T.goDoor(2); T.update(.016);
 /* 눈사태: 종이 찢기 판을 열고 닫기 */
 { const w=T.BUILD.avalanche(); T.activate(w); T.S.mode='scene'; T.S.realm={id:'avalanche',color:'#dce6f0',dark:true};
   w.onAct(); if(!T.Tear.busy()) throw new Error('tear box not open');
-  T.Tear.begin('야근'); for(let i=0;i<40;i++) T.update(.05); w.tearBits(50,T.S.me); for(let i=0;i<60;i++) T.update(.05);
+  T.Tear.begin('야근'); for(let i=0;i<8;i++) T.update(.05); for(let c=0;c<10;c++){ T.Tear.tap(); for(let i=0;i<8;i++) T.update(.05); } if(T.Tear.count()!==10) throw new Error('tear count '+T.Tear.count()); for(let i=0;i<40;i++) T.update(.05); w.tearBits(50,T.S.me); for(let i=0;i<60;i++) T.update(.05);
   T.Tear.close(); for(let i=0;i<5;i++) T.update(.05);
   console.log('TEAR_OK'); T.S.mode='hub'; T.activate(T.hub); }
 /* 지진: 쿵쿵 연타로 규모를 올려 대지진까지 */

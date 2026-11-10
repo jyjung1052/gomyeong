@@ -13,8 +13,8 @@ const Stomp=(()=>{
   (document.querySelector('#hud .bottom')||document.body).prepend(pad);
   const showBest=()=>{ res.textContent=best?`오늘 최대 규모 ${best.toFixed(1)}`:'빠르게 누를수록 규모가 올라가요'; };
 
-  function openPad(){ if(open_) return; open_=true; pad.hidden=false; level=0; n=0; showBest(); const m=S.me; m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false; touch(); }
-  function close(){ open_=false; pad.hidden=true; level=0; world.setLevel&&world.setLevel(0); Sound.quakeSet&&Sound.quakeSet(0); figure.stomp(S.t,null); }
+  function openPad(){ if(open_) return; open_=true; pad.hidden=false; level=0; n=0; showBest(); S.camDrop=1.15; const m=S.me; m.tx=m.x; m.tz=m.z; m.pending=null; m.walking=false; touch(); }
+  function close(){ open_=false; S.camDrop=0; pad.hidden=true; level=0; world.setLevel&&world.setLevel(0); Sound.quakeSet&&Sound.quakeSet(0); figure.stomp(S.t,null); }
   function stomp(){
     if(!open_||!hitDone&&S.t-pt<.1) return;
     const now=S.t, fast=now-last<.45; last=now; n++;
