@@ -311,13 +311,16 @@ function buildFigure(){
       upper.rotation.set(lerp(-.2*wind,.35,fling)*(1-back),lerp(.45*wind,-.3,fling)*(1-back),0);
       brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066; mouth.visible=fling>0&&back<1; mouth.scale.set(1.1,1.1,.5); }
   };
+  const QA={x:.3,y:1.57,z:-1.0,f:-1.45};
   /* 발 구르기: 한쪽 무릎을 번쩍 들었다가 쿵. 두 주먹은 아래로 불끈. o=null이면 원래대로 */
   const stomp=(t,o)=>{
-    if(!o){ legL.rotation.set(0,0,0); legR.rotation.set(0,0,0); [armL,armR].forEach(a=>{ a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
+    if(!o){ legL.rotation.set(0,0,0); legR.rotation.set(0,0,0); [armL,armR].forEach(a=>{ a.rotation.order='XYZ'; a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
       mouth.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
     const Lg=o.side>0?legR:legL, Og=o.side>0?legL:legR, k=o.lift, sg=o.side>0?1:-1;
     Lg.rotation.set(-1.15*k,0,sg*.12*k); Og.rotation.set(.08*k,0,0);
-    armL.rotation.set(.15,0,.45+.15*k); armR.rotation.set(.15,0,-.45-.15*k); armL.fore.rotation.set(-.5,0,0); armR.fore.rotation.set(-.5,0,0);
+    /* 두 손은 양 옆구리에: 팔꿈치를 옆으로 벌리고 손등이 허리에 닿게(허리에 손) */
+    armL.rotation.order=armR.rotation.order='ZYX'; armL.rotation.set(QA.x,QA.y,QA.z); armR.rotation.set(QA.x,-QA.y,-QA.z);
+    armL.fore.rotation.set(QA.f,0,0); armR.fore.rotation.set(QA.f,0,0);
     upper.rotation.set(-.12*k+.08,0,sg*.1*k); head.rotation.set(.15-.1*k,0,0);
     brows[0].rotation.z=-.4; brows[1].rotation.z=.4; brows[0].position.y=brows[1].position.y=.066; mouth.visible=o.level>.3; mouth.scale.set(1.1,.5+.6*o.level,.5);
   };
@@ -325,7 +328,7 @@ function buildFigure(){
   const leftHand=()=>{ const v=new THREE.Vector3(0,-.33,.08); armL.fore.localToWorld(v); return v; };
   /* 팔·몸 자세를 숫자로 바로 정한다(연속 연출용). o=null이면 원래대로 */
   const armsPose=o=>{
-    if(!o){ [armL,armR].forEach(a=>{ a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
+    if(!o){ [armL,armR].forEach(a=>{ a.rotation.order='XYZ'; a.rotation.set(0,0,0); a.fore.rotation.set(0,0,0); }); upper.rotation.set(0,0,0); head.rotation.set(0,0,0);
       mouth.visible=false; eyesOpen.visible=true; eyesClosed.visible=false; brows[0].rotation.z=0; brows[1].rotation.z=0; brows[0].position.y=brows[1].position.y=.082; return; }
     armL.rotation.set(o.lx,0,o.lz); armR.rotation.set(o.rx,0,o.rz); armL.fore.rotation.set(o.lf,0,0); armR.fore.rotation.set(o.rf,0,0);
     upper.rotation.set(o.lean||0,0,0); head.rotation.set(o.head||0,0,0);
@@ -334,7 +337,7 @@ function buildFigure(){
     mouth.visible=(o.mouth||0)>.1; mouth.scale.set(1.1,.4+(o.mouth||0),.5);
   };
   return {
-    root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch, crumple, stomp, rightHand, leftHand, armsPose,
+    QA, root, shadow, flats:[shadow,halo,ring], yell, smash, kick, punch, crumple, stomp, rightHand, leftHand, armsPose,
     limbs:[[legL,new THREE.Vector3(0,-.92,.2)],[legR,new THREE.Vector3(0,-.92,.2)],[armL,new THREE.Vector3(0,-.62,.08)],[armR,new THREE.Vector3(0,-.62,.08)]],
     update(t,sitting,walking,breath,haloColor,haloK,ringOn,lie){
       const lying=!!(sitting&&lie), sit=sitting&&!lying;
