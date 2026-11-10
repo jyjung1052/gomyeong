@@ -622,6 +622,19 @@ const Sound=(()=>{
     h.connect(hp); hp.connect(hg); hg.connect(sc.bus); h.start(t,rnd(0,2)); h.stop(t+6.2);
     thunder(sc);
   }
+  /* 베개가 팡! 터지는 소리: 날카로운 파열음 + 묵직한 울림 + 깃털이 훅 퍼지는 소리 */
+  function pop(){
+    if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime;
+    const s=ctx.createBufferSource(); s.buffer=noiseW; const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=700;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(1,t+.003); g.gain.exponentialRampToValueAtTime(.0001,t+.16);
+    s.connect(hp); hp.connect(g); g.connect(sc.bus); const w=ctx.createGain(); w.gain.value=.6; g.connect(w); w.connect(sc.wet); s.start(t,rnd(0,2)); s.stop(t+.2);
+    const o=ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(40,t+.25);
+    const og=ctx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(.8,t+.004); og.gain.exponentialRampToValueAtTime(.0001,t+.35);
+    o.connect(og); og.connect(sc.bus); o.start(t); o.stop(t+.4);
+    const f=ctx.createBufferSource(); f.buffer=noiseW; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.setValueAtTime(3000,t); bp.frequency.exponentialRampToValueAtTime(900,t+1.2); bp.Q.value=.5;
+    const fg=ctx.createGain(); fg.gain.setValueAtTime(0,t+.03); fg.gain.linearRampToValueAtTime(.18,t+.12); fg.gain.exponentialRampToValueAtTime(.0001,t+1.4);
+    f.connect(bp); bp.connect(fg); fg.connect(sc.bus); f.start(t+.03,rnd(0,2)); f.stop(t+1.5);
+  }
   /* 용오름: 바람이 휘감아 하늘로 솟구치는 소리 */
   function whoosh(){
     if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime;
@@ -656,7 +669,7 @@ const Sound=(()=>{
     }
   }
   return {
-    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche, tearOn, tearSet, tearOff, rip, stomp, quakeSet, bigQuake, blocks,
+    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche, tearOn, tearSet, tearOff, rip, stomp, quakeSet, bigQuake, blocks, pop,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }

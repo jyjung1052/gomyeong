@@ -64,7 +64,7 @@ function buildHail(){
     const piv=new THREE.Group(); piv.position.set(0,3.3,0); st.add(piv);
     piv.add(mesh(new THREE.CylinderGeometry(.025,.025,.9,6),rope,0,-.45,0));
     const bag=mesh(bagG,M(choice(R,['#ffffff','#fbe3e8','#e3eefb','#fdf3d6','#efe4fb']),{shininess:6}),0,-1.95,0); piv.add(bag);
-    const band=mesh(new THREE.TorusGeometry(.42,.03,6,24),M('#d9b98a'),0,-1.05,0); band.rotation.x=Math.PI/2; piv.add(band);
+    const band=mesh(new THREE.TorusGeometry(.42,.03,6,24),M('#d9b98a'),0,.9,0); band.rotation.x=Math.PI/2; bag.add(band);   /* 묶은 끈도 베개와 함께 터진다 */
     piv.add(mesh(new THREE.CylinderGeometry(.025,.025,.5,6),rope,0,-3.15,0)); st.add(mesh(new THREE.CylinderGeometry(.16,.2,.06,12),wood,0,.03,0));   // 바닥에도 묶어 고정
     return {st,piv,bag,wob:0,squash:0,hy:0,note:null};
   });
@@ -99,14 +99,23 @@ function buildHail(){
     /* 마지막 어퍼컷: 베개가 크게 휘청, 깃털이 방 가득 */
     finale(i){
       const b=HA_BAGS[i], bd=bags[i]; if(!bd) return; const dx=b.x-b.sx, dz=b.z-b.sz, L=Math.hypot(dx,dz)||1;
-      bd.wob=2; bd.squash=1; bd.hy=.3;
-      for(let k=0;k<160;k++){ const a=Math.random()*TAU, s=1+Math.random()*5; spawnF(b.x,1.5,b.z,Math.cos(a)*s,3+Math.random()*6,Math.sin(a)*s); }
+      bd.wob=2; bd.squash=1; bd.hy=.3; bd.burst=0;   /* 팡! 직전에 순간 부풀었다가 터진다 */
       rain=1;
     },
     update(t,dt,me){
       bags.forEach(bd=>{
         /* 위아래로 단단히 묶여 있어 밀려나지 않고, 맞은 자리가 움푹 눌렸다가 출렁인다 */
         bd.wob=Math.max(0,bd.wob-dt*3); bd.piv.rotation.set(-bd.wob*.035*Math.sin(t*34),0,bd.wob*.02*Math.sin(t*27));
+        /* 마지막 한 방: 0.07초 빵빵하게 부풀었다가 팡! 깃털이 사방으로. 3.5초 뒤 새 베개가 퐁 하고 다시 걸린다 */
+        if(bd.burst!=null){ bd.burst+=dt; const bt=bd.burst;
+          if(bt<.07){ const k=1+bt/.07*.35; bd.bag.scale.set(k,k*1.05,k); bd.wob=2.5; return; }
+          if(!bd.popped){ bd.popped=true; bd.bag.visible=false;
+            const wp=new THREE.Vector3(); bd.bag.getWorldPosition(wp);
+            for(let k=0;k<460;k++){ const a=Math.random()*TAU, e=(Math.random()-.3)*1.4, s=2+Math.random()*7;
+              spawnF(wp.x+(Math.random()-.5)*.6,wp.y+(Math.random()-.5)*1.4,wp.z+(Math.random()-.5)*.6,Math.cos(a)*Math.cos(e)*s,Math.sin(e)*s+2+Math.random()*3,Math.sin(a)*Math.cos(e)*s); }
+            if(typeof Sound!=='undefined'&&Sound.pop) Sound.pop(); }
+          if(bt>3.5){ bd.bag.visible=true; const p=Math.min(1,(bt-3.5)/.35), k=p<.7?p/.7*1.12:1.12-(p-.7)/.3*.12; bd.bag.scale.setScalar(Math.max(.01,k)); if(p>=1){ bd.burst=null; bd.popped=false; bd.bag.scale.setScalar(1); } }
+          return; }
         bd.squash=Math.max(0,bd.squash-dt*5); const q=bd.squash; bd.bag.scale.set(1+q*.16,1-q*.04,1-q*.3); bd.bag.position.z=-q*.12; bd.bag.rotation.x=q*(bd.hy||0)*.25;
       });
       /* 깃털 우박: 콤보가 높을수록 천장 쪽에서 우수수 */

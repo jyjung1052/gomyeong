@@ -49,7 +49,7 @@ const Punch=(()=>{
         if(S.t-a.last>.5&&a.combo) { a.combo=0; pc.textContent=''; }
         if(u>=TIME){ a.phase='up'; a.tUp=S.t; btn.hidden=true; } }
       else if(a.phase==='up'){ a.up=(S.t-a.tUp)/.7;
-        if(a.up>=.55&&!a.fin){ a.fin=true; world.finale(a.i); Sound.punch&&Sound.punch(2.2); Sound.whoosh&&Sound.whoosh(); shakeT=.5;
+        if(a.up>=.55&&!a.fin){ a.fin=true; world.finale(a.i); Sound.punch&&Sound.punch(2.2); shakeT=.8;   /* 팡! 소리는 베개가 터지는 순간 장면에서 낸다 */
           today+=a.n; try{ localStorage.setItem(dayKey(),String(today)); }catch(e){} showCount();
           res.textContent=`${a.n}대 때렸어요!`+(a.best>=3?` 최고 ${a.best} 콤보`:''); }
         if(a.up>=1){ a.phase='done'; a.tDone=S.t; figure.punch(S.t,null); } }
