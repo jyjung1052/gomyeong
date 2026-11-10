@@ -99,6 +99,7 @@ function buildAvalanche(){
     for(let i=0;i<n;i++){ const p1=ring[i], p2=ring[(i+1)%n]; pts.push(0,0,0,p1[0],p1[1],(Math.random()-.5)*.25,p2[0],p2[1],(Math.random()-.5)*.25); }
     gg.setAttribute('position',new THREE.Float32BufferAttribute(pts,3)); gg.computeVertexNormals(); return gg; });
   const SN=420, shardMat=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,emissive:0x8a8a8a});   /* 뒷면도 어둡지 않게(눈처럼 하얗게) */
+  shardMat.userData.noCut=true;   /* 시야 가림 지우기에서 빼기: 손에 쥔 조각과 눈앞 종이 눈이 사라지지 않게 */
   const shardIM=shardGeos.map(gg=>{ const im=new THREE.InstancedMesh(gg,shardMat,SN); im.frustumCulled=false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); g.add(im); return im; });
   const SCOL=['#fffdf5','#ffffff','#f6f1e4','#eef3fb','#fff7e6','#f9fbff'];
   const shards=[]; shardIM.forEach((im,k)=>{ const col=new THREE.Color(); for(let i=0;i<SN;i++){ im.setColorAt(i,col.set(SCOL[(i+k)%SCOL.length]).offsetHSL(0,0,(Math.random()-.5)*.04)); shards.push({im,i,life:0}); } im.instanceColor.needsUpdate=true; });
@@ -106,12 +107,14 @@ function buildAvalanche(){
   function shard(p,v,size,life){ const s=shards[si]; si=(si+1)%shards.length;
     Object.assign(s,{x:p.x,y:p.y,z:p.z,vx:v.x,vy:v.y,vz:v.z,size,life:life||9,age:0,ph:Math.random()*TAU,fr:1.5+Math.random()*2.5,
       q:new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.random()*6,Math.random()*6,Math.random()*6)),ax:new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize(),spin:4+Math.random()*10,landed:false}); return s; }
-  let wind=0;
+  let wind=0, held=[];
   function stepShards(t,dt){
     wind=Math.sin(t*.35)*.6+Math.sin(t*1.1)*.25;
     const dirty=[false,false,false];
     for(const s of shards){
-      if(s.life<=0) continue; dirty[shardIM.indexOf(s.im)]=true; s.age+=dt; s.life-=dt;
+      if(s.life<=0) continue; dirty[shardIM.indexOf(s.im)]=true;
+      if(s.held){ so.position.set(s.x,s.y,s.z); so.quaternion.copy(s.q); so.scale.setScalar(s.size); so.updateMatrix(); s.im.setMatrixAt(s.i,so.matrix); continue; }   /* 손에 쥔 조각은 손이 움직인다 */
+      s.age+=dt; s.life-=dt;
       if(!s.landed){
         /* 처음엔 휙 날아가다가, 공기 저항으로 금세 느려져 천천히 팔랑이며 내려온다 */
         const drag=s.age<.6?1.8:3.2; s.vx+=(wind-s.vx)*Math.min(1,dt*drag*.5); s.vz+=(-s.vz)*Math.min(1,dt*drag*.4);
@@ -136,6 +139,28 @@ function buildAvalanche(){
     /* ---- 종이 찢기 연출용 ---- */
     paperShow(text){ sheet.material.map.dispose(); sheet.material.map=ptex(text); sheet.material.needsUpdate=true; sheet.visible=true; },
     paperHide(){ sheet.visible=false; },
+    /* ---- 손에 쥔 조각 뭉치: 찢을 때마다 수는 두 배, 크기는 작아진다 ---- */
+    heldSet(n,size){
+      held.forEach(s=>{ s.held=false; s.life=0; });
+      held=[]; for(let k=0;k<n;k++){ const s=shard({x:0,y:-50,z:0},{x:0,y:0,z:0},size*(.75+Math.random()*.5),30); s.held=true;
+        s.side=k%2?1:-1; s.ou=(Math.random()-.5)*size*2.2; s.ov=(Math.random()-.5)*size*2.6; s.of=(Math.random()-.5)*.05; s.tw=(Math.random()-.5)*.8; held.push(s); }
+    },
+    /* 손 위치에 맞춰 뭉치를 붙인다: 왼쪽 반은 왼손, 오른쪽 반은 오른손. 손이 모이면 한 덩이 */
+    heldPose(hl,hr,up,shake){
+      const side=_a.copy(hr).sub(hl), L=side.length()||1e-3; side.divideScalar(L); const fwd=_f.copy(side).cross(up).normalize();
+      const look=new THREE.Matrix4().makeBasis(side,up,fwd), q0=new THREE.Quaternion().setFromRotationMatrix(look);
+      held.forEach(s=>{ const h=s.side<0?hl:hr, inward=s.side<0?1:-1;
+        const a1=inward*.03+s.ou*.35, a2=.05+s.ov*.6, a3=.05+s.of;   /* 손 바로 위로 삐죽: 손에 쥔 종이 뭉치처럼 */
+        s.x=h.x+side.x*a1+up.x*a2+fwd.x*a3; s.y=h.y+side.y*a1+up.y*a2+fwd.y*a3; s.z=h.z+side.z*a1+up.z*a2+fwd.z*a3;
+        if(shake){ s.x+=(Math.random()-.5)*.012; s.y+=(Math.random()-.5)*.012; }
+        s.q.copy(q0).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(s.tw*.6,s.tw*.5,s.tw))); });
+    },
+    /* 찢길 때 떨어져 나가는 부스러기 */
+    heldCrumbs(mid,side,up,n,size){ for(let k=0;k<n;k++){ const sg=Math.random()<.5?-1:1, sp=1+Math.random()*2.5;
+      shard(mid.clone().addScaledVector(side,(Math.random()-.5)*.4),side.clone().multiplyScalar(sg*sp).addScaledVector(up,.3+Math.random()*1.5).add(new THREE.Vector3((Math.random()-.5),(Math.random()-.5)*.5,(Math.random()-.5))),size*(.5+Math.random()*.7),8+Math.random()*3); } },
+    /* 촤!!!!!: 쥐고 있던 조각을 전부 하늘로 */
+    heldInfo(){ return held.map(s=>[+s.x.toFixed(2),+s.y.toFixed(2),+s.z.toFixed(2),+s.size.toFixed(3),s.life>0,s.held]); },
+    heldRelease(up){ held.forEach(s=>{ s.held=false; s.age=0; s.life=12+Math.random()*4; s.vx=(Math.random()-.5)*3.5; s.vy=5+Math.random()*6; s.vz=(Math.random()-.5)*3.5; }); held=[]; },
     paperPose(hl,hr,up,c,shake){ sheetPose(hl,hr,up,c,shake); },
     /* 촤촤촥: 뭉치가 양손 사이에서 터지듯 조각조각. 손이 벌어지는 방향으로 튄다 */
     paperShred(mid,side,up,n){ sheet.visible=false;
