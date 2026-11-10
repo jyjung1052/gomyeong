@@ -112,10 +112,10 @@ function buildAvalanche(){
   let snowAmt=0;                                  // 지금까지 찢은 양(0~)
   /* ---- 손에 든 종이: 양손 사이에 걸린 한 장. 손이 모이면 와그작 구겨지고, 벌리면 수많은 조각으로 찢겨 흩날린다 ---- */
   const PW=.8, PH=.56, PX=18, PY=12;
-  const ptex=(text)=>canvasTex(320,224,(c2,w,h)=>{ c2.fillStyle='#fffdf5'; c2.fillRect(0,0,w,h);
-    c2.strokeStyle='rgba(110,150,210,.4)'; c2.lineWidth=2; for(let y=40;y<h-8;y+=26){ c2.beginPath(); c2.moveTo(10,y); c2.lineTo(w-10,y); c2.stroke(); }
-    c2.strokeStyle='rgba(230,120,120,.45)'; c2.beginPath(); c2.moveTo(30,0); c2.lineTo(30,h); c2.stroke();
-    if(text){ c2.fillStyle='#2b2a35'; c2.textAlign='center'; c2.textBaseline='middle'; let fs=74; c2.font=`700 ${fs}px "Gowun Dodum","Apple SD Gothic Neo",sans-serif`;
+  const ptex=(text)=>canvasTex(320,224,(c2,w,h)=>{ c2.fillStyle='#ffe66e'; c2.fillRect(0,0,w,h);   /* 노란 포스트잇 */
+    c2.fillStyle='rgba(235,190,40,.35)'; c2.fillRect(0,0,w,28);
+    c2.strokeStyle='rgba(190,150,30,.28)'; c2.lineWidth=2; for(let y=40;y<h-8;y+=26){ c2.beginPath(); c2.moveTo(10,y); c2.lineTo(w-10,y); c2.stroke(); }
+        if(text){ c2.fillStyle='#2b2a35'; c2.textAlign='center'; c2.textBaseline='middle'; let fs=74; c2.font=`700 ${fs}px "Gowun Dodum","Apple SD Gothic Neo",sans-serif`;
       while(c2.measureText(text).width>w-40&&fs>24){ fs-=4; c2.font=`700 ${fs}px "Gowun Dodum","Apple SD Gothic Neo",sans-serif`; } c2.fillText(text,w/2,h/2+4); } });
   const sheetG=new THREE.PlaneGeometry(1,1,PX,PY), sheetUV=Float32Array.from(sheetG.attributes.position.array), sheetN=Float32Array.from({length:sheetG.attributes.position.count*3},()=>Math.random()-.5);
   const sheet=new THREE.Mesh(sheetG,new THREE.MeshLambertMaterial({map:ptex(''),side:THREE.DoubleSide})); sheet.visible=false; sheet.frustumCulled=false; g.add(sheet);
@@ -142,10 +142,10 @@ function buildAvalanche(){
     const ring=ang.map(a=>[Math.cos(a)*(.6+Math.random()*.5),Math.sin(a)*(.5+Math.random()*.6)]);
     for(let i=0;i<n;i++){ const p1=ring[i], p2=ring[(i+1)%n]; pts.push(0,0,0,p1[0],p1[1],(Math.random()-.5)*.25,p2[0],p2[1],(Math.random()-.5)*.25); }
     gg.setAttribute('position',new THREE.Float32BufferAttribute(pts,3)); gg.computeVertexNormals(); return gg; });
-  const SN=420, shardMat=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,emissive:0x8a8a8a});   /* 뒷면도 어둡지 않게(눈처럼 하얗게) */
+  const SN=420, shardMat=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,emissive:0x6a5410});   /* 뒷면도 어둡지 않게(포스트잇처럼 밝은 노랑) */
   shardMat.userData.noCut=true;   /* 시야 가림 지우기에서 빼기: 손에 쥔 조각과 눈앞 종이 눈이 사라지지 않게 */
   const shardIM=shardGeos.map(gg=>{ const im=new THREE.InstancedMesh(gg,shardMat,SN); im.frustumCulled=false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); g.add(im); return im; });
-  const SCOL=['#fffdf5','#ffffff','#f6f1e4','#eef3fb','#fff7e6','#f9fbff'];
+  const SCOL=['#ffe66e','#ffdf55','#ffeb85','#ffd94a','#ffe468','#fff09a'];
   const shards=[]; shardIM.forEach((im,k)=>{ const col=new THREE.Color(); for(let i=0;i<SN;i++){ im.setColorAt(i,col.set(SCOL[(i+k)%SCOL.length]).offsetHSL(0,0,(Math.random()-.5)*.04)); shards.push({im,i,life:0}); } im.instanceColor.needsUpdate=true; });
   let si=0; const so=new THREE.Object3D(), sq=new THREE.Quaternion(), sAx=new THREE.Vector3();
   function shard(p,v,size,life){ const s=shards[si]; si=(si+1)%shards.length;
