@@ -81,14 +81,14 @@ function clampMe(){
    그래도 느리면(초당 45장 미만) 해상도를 조금씩 낮추고, 넉넉하면 다시 올린다 */
 let quality=1, qAcc=0, qN=0, qGood=0;
 function pixRatio(){
-  const cap=Math.min(window.devicePixelRatio||1,1.5,Math.sqrt(2.3e6/(W*H)));
-  return Math.max(.5,cap*quality);
+  const cap=Math.min(window.devicePixelRatio||1,2,Math.max(1,Math.sqrt(3.6e6/(W*H))));   /* 폰은 레티나 2배까지 선명하게, 큰 모니터만 점 수 상한 */
+  return Math.max(.75,cap*quality);
 }
 function adaptQuality(ms){
   qAcc+=ms; qN++; if(qAcc<1000) return;
   const avg=qAcc/qN; qAcc=0; qN=0; let q=quality;
-  if(avg>22) { q=Math.max(.55,quality-.12); qGood=0; }
-  else if(avg<15){ if(++qGood>=3){ q=Math.min(1,quality+.06); qGood=0; } }
+  if(avg>40) { q=Math.max(.75,quality-.08); qGood=0; }   /* 초당 25장보다 느릴 때만 조금 낮춘다(절전 모드 30장 고정 폰은 그대로 선명하게) */
+  else if(avg<26){ if(++qGood>=2){ q=Math.min(1,quality+.08); qGood=0; } }
   else qGood=0;
   if(q!==quality){ quality=q; if(renderer){ renderer.setPixelRatio(pixRatio()); renderer.setSize(W,H,false); } }
 }
