@@ -1,14 +1,29 @@
-/* ---- 지진: 햇살 가득한 붉은 바위 평원. 발을 쿵쿵 구를수록 땅이 갈라지고 흔들려, 둘레의 나무 블록 탑들이 휘청이다 와르르 무너진다 ---- */
+/* ---- 지진: 햇살 가득한 붉은 바위 평원. 발을 쿵쿵 구를수록 땅이 점점 깊게 갈라지고, 둘레의 모래 더미가 스르르 무너져 그 틈으로 흘러 들어간다 ---- */
 const QK_R=30;
 function quakeH(x,z){ const r=Math.hypot(x,z); return .08*nz(x*.15,1,z*.15)+smooth(QK_R+4,QK_R+30,r)*(5+4*nz(x*.04,2,z*.04)); }
-function crackTex(){
-  return canvasTex(256,256,(g,w,h)=>{ g.clearRect(0,0,w,h); g.strokeStyle='rgba(60,30,15,.85)'; g.lineCap='round';
-    const R=rng(9);
-    const branch=(x,y,a,len,wd)=>{ if(len<6||wd<.6) return; g.lineWidth=wd; g.beginPath(); g.moveTo(x,y); let px=x,py=y;
-      for(let s=0;s<6;s++){ a+=(R()-.5)*.7; px+=Math.cos(a)*len/6; py+=Math.sin(a)*len/6; g.lineTo(px,py); } g.stroke();
-      if(R()<.8) branch(px,py,a+(R()-.5)*1.4,len*.6,wd*.6); if(R()<.5) branch(px,py,a+(R()-.5)*1.4,len*.5,wd*.55); };
-    for(let i=0;i<7;i++) branch(w/2,h/2,i/7*TAU+R()*.5,w*.34,5);
-    const gr=g.createRadialGradient(w/2,h/2,0,w/2,h/2,26); gr.addColorStop(0,'rgba(70,35,15,.55)'); gr.addColorStop(1,'rgba(70,35,15,0)'); g.fillStyle=gr; g.fillRect(0,0,w,h); });
+/* 갈라진 땅: 가지 친 균열을 한 번 만들어 두고, 쿵 할 때마다 더 길고 넓고 깊게 다시 그린다 */
+function crackNet(seed){
+  const R=rng(seed), lines=[];
+  const branch=(x,y,a,len,wd,d0,gen)=>{ if(len<10||wd<.5) return; const pts=[[x,y,d0]]; let px=x,py=y,d=d0;
+    for(let s=0;s<7;s++){ a+=(R()-.5)*.7; px+=Math.cos(a)*len/7; py+=Math.sin(a)*len/7; d+=len/7; pts.push([px,py,d]);
+      if(s>1&&R()<.22) branch(px,py,a+(R()<.5?-1:1)*(.5+R()*.8),len*.55,wd*.6,d,gen+1); }
+    lines.push({pts,wd,gen}); };
+  const n=5+Math.floor(R()*3); for(let i=0;i<n;i++) branch(256,256,i/n*TAU+R()*.6,150+R()*90,7,0,0);
+  return lines;
+}
+function drawCrack(c2,lines,L){
+  const w=512; c2.clearRect(0,0,w,w); c2.lineCap='round'; c2.lineJoin='round';
+  const reach=40+L*24, wk=.45+L*.13;
+  const path=(ln,ox,oy)=>{ c2.beginPath(); let first=true;
+    for(let i=0;i<ln.pts.length;i++){ const [x,y,d]=ln.pts[i]; if(d>reach){ if(i>0){ const [x0,y0,d0]=ln.pts[i-1], k=(reach-d0)/(d-d0); c2.lineTo(x0+(x-x0)*k+ox,y0+(y-y0)*k+oy); } break; }
+      if(first){ c2.moveTo(x+ox,y+oy); first=false; } else c2.lineTo(x+ox,y+oy); } c2.stroke(); };
+  /* 갈라진 가장자리 그늘 → 틈 → 깊은 바닥(단계가 오를수록 더 검고 넓게) → 볕 받는 모서리 */
+  lines.forEach(ln=>{ c2.strokeStyle='rgba(110,60,30,.45)'; c2.lineWidth=ln.wd*wk*2.6; path(ln,0,0); });
+  lines.forEach(ln=>{ c2.strokeStyle='rgba(255,214,170,.5)'; c2.lineWidth=ln.wd*wk*1.25; path(ln,-1.5,-1.5); });
+  lines.forEach(ln=>{ c2.strokeStyle='rgba(58,28,12,.97)'; c2.lineWidth=ln.wd*wk*1.15; path(ln,0,0); });
+  if(L>=2) lines.forEach(ln=>{ c2.strokeStyle=`rgba(12,5,2,${Math.min(1,.4+L*.08)})`; c2.lineWidth=ln.wd*wk*Math.min(.8,.25+L*.06); path(ln,.6,.6); });
+  const pr=10+L*5, gr=c2.createRadialGradient(256,256,0,256,256,pr*2.2); gr.addColorStop(0,`rgba(15,7,3,${Math.min(.95,.3+L*.07)})`); gr.addColorStop(.45,'rgba(60,30,12,.5)'); gr.addColorStop(1,'rgba(60,30,12,0)');
+  c2.fillStyle=gr; c2.beginPath(); c2.arc(256,256,pr*2.2,0,TAU); c2.fill();
 }
 function buildQuake(){
   const g=new THREE.Group(), R=rng(64);
@@ -30,38 +45,50 @@ function buildQuake(){
   /* 마른 풀 덤불 */
   const shrubs=[]; for(let i=0;i<60;i++){ const a=R()*TAU, r=4+Math.sqrt(R())*(QK_R-2), x=Math.cos(a)*r, z=Math.sin(a)*r; shrubs.push({x,y:.1,z,sx:.4+R()*.4,sy:.3+R()*.3,sz:.4+R()*.4,c:choice(R,['#9c9a5a','#8a8a4c','#b0a868'])}); }
   g.add(instances(new THREE.IcosahedronGeometry(1,0),VC({vertexColors:false,flatShading:true}),shrubs));
-  /* 나무 블록 탑: 원을 따라 여기저기. 흔들리다 무너지고, 잠시 뒤 되감기처럼 다시 쌓인다 */
-  const BC=['#f2c14e','#f78154','#4d9de0','#7ac74f','#e15a97','#ffffff','#9b72cf'];
-  const towers=[]; const blocks=[];
-  for(let i=0;i<26;i++){ const a=i/26*TAU+R()*.15, r=9+R()*16, x=Math.cos(a)*r, z=Math.sin(a)*r, n=6+Math.floor(R()*8);
-    const t={x,z,b:[],state:'stand',lean:0,lp:R()*TAU,timer:0,dist:r};
-    for(let k=0;k<n;k++){ const bw=.7+R()*.3, bh=.42; const b={hx:x,hy:.21+k*bh,hz:z,ry:R()*.4+(k%2)*Math.PI/2,w:bw,h:bh,d:bw*.45,c:choice(R,BC),x:0,y:0,z:0,vx:0,vy:0,vz:0,rx:0,rz:0,vrx:0,vrz:0,tw:t,k};
-      b.x=b.hx; b.y=b.hy; b.z=b.hz; t.b.push(b); blocks.push(b); }
-    towers.push(t); }
-  const bim=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),VC({vertexColors:false,shininess:16}),blocks.length);
-  { const col=new THREE.Color(); blocks.forEach((b,i)=>bim.setColorAt(i,col.set(b.c))); bim.instanceColor.needsUpdate=true; }
-  bim.frustumCulled=false; g.add(bim);
+  /* 모래 더미: 원을 따라 여기저기. 쿵 할 때마다 조금씩 내려앉아 갈라진 틈으로 흘러 들어가고, 잠잠해지면 다시 바람에 쌓인다 */
+  const SC=['#f4dcae','#efd29e','#f7e3bb','#ead0a0'];
+  const pileG=new THREE.LatheGeometry([[0,1],[.18,.97],[.38,.86],[.58,.62],[.76,.34],[.9,.13],[1.02,0]].map(([x,y])=>new THREE.Vector2(x,y)),28);
+  displace(pileG,(x,y,z)=>{ const k=1+.07*nz(x*2.5,y*2,z*2.5); return [x*k,y*(1+.05*nz(x*3,5,z*3)),z*k]; });
+  const piles=[]; for(let i=0;i<26;i++){ const a=i/26*TAU+R()*.15, r=6.5+R()*15, rad=1.5+R()*1.2, h0=1.1+R()*1.1;
+    piles.push({x:Math.cos(a)*r,z:Math.sin(a)*r,r0:rad,h0,h:h0,ht:h0,ry:R()*6,c:choice(R,SC)}); }
+  const pim=new THREE.InstancedMesh(pileG,VC({vertexColors:false,shininess:4}),piles.length);
+  { const col=new THREE.Color(); piles.forEach((p,i)=>pim.setColorAt(i,col.set(p.c))); pim.instanceColor.needsUpdate=true; }
+  g.add(pim);
   const o3=new THREE.Object3D();
-  function drawBlocks(){
-    blocks.forEach((b,i)=>{ const t=b.tw;
-      if(t.state==='stand'||t.state==='rewind'){ /* 서 있을 땐 탑 전체가 바닥을 축으로 기우뚱 */
-        const L=t.lean*Math.sin(t.lp), L2=t.lean*Math.cos(t.lp*1.3)*.6, h=b.y;
-        o3.position.set(b.x+Math.sin(L)*h,b.y*Math.cos(L)*Math.cos(L2),b.z+Math.sin(L2)*h); o3.rotation.set(L2,b.ry,-L);
-      }else{ o3.position.set(b.x,b.y,b.z); o3.rotation.set(b.rx,b.ry,b.rz); }
-      o3.scale.set(b.w,b.h,b.d); o3.updateMatrix(); bim.setMatrixAt(i,o3.matrix); });
-    bim.instanceMatrix.needsUpdate=true;
-  }
-  function topple(t,dirx,dirz,power){
-    if(t.state!=='stand') return; t.state='fall'; t.timer=0;
-    t.b.forEach(b=>{ const up=b.k*.35; b.vx=dirx*(1+up)*power*(1+Math.random()*.6)+(Math.random()-.5)*1.5; b.vz=dirz*(1+up)*power*(1+Math.random()*.6)+(Math.random()-.5)*1.5; b.vy=1+Math.random()*2.5*power;
-      b.vrx=(Math.random()-.5)*8; b.vrz=(Math.random()-.5)*8; b.sx=b.x; b.sy=b.y; b.sz=b.z; });
-    if(typeof Sound!=='undefined'&&Sound.blocks) Sound.blocks(t.b.length);
-  }
+  function drawPiles(){ piles.forEach((p,i)=>{ const k=1-p.h/p.h0, rr=p.r0*(1+.4*k);   /* 낮아질수록 옆으로 퍼진다 */
+    o3.position.set(p.x,quakeH(p.x,p.z)-.02,p.z); o3.rotation.set(0,p.ry,0); o3.scale.set(rr,Math.max(.03,p.h),rr); o3.updateMatrix(); pim.setMatrixAt(i,o3.matrix); });
+    pim.instanceMatrix.needsUpdate=true; }
+  /* 흘러내리는 모래 알갱이: 더미에서 틈 쪽으로 미끄러져 가다 틈 속으로 쏙 */
+  const SN=900, spos=new Float32Array(SN*3), sv=[...Array(SN)].map(()=>({life:0}));
+  const sgeo=new THREE.BufferGeometry(); sgeo.setAttribute('position',new THREE.BufferAttribute(spos,3));
+  const sandPts=new THREE.Points(sgeo,new THREE.PointsMaterial({color:0xc8925a,size:.13})); sandPts.frustumCulled=false; g.add(sandPts);
+  for(let i=0;i<SN;i++) spos[i*3+1]=-99;
+  let sni=0;
+  function flow(p,c,n){ for(let k=0;k<n;k++){ const q=sv[sni]; sni=(sni+1)%SN; const a=Math.random()*TAU, rr=Math.random()*p.r0*(1+.4*(1-p.h/p.h0));
+    const x=p.x+Math.cos(a)*rr, z=p.z+Math.sin(a)*rr, top=p.h*Math.max(0,1-rr/p.r0);
+    /* 틈의 한 갈래 쪽으로: 가운데 근처 아무 데나 */
+    const ta=Math.random()*TAU, tr=Math.random()*Math.min(2.4,.4+c.L*.22);
+    Object.assign(q,{x,y:quakeH(x,z)+top+.05,z,tx:c.x+Math.cos(ta)*tr,tz:c.z+Math.sin(ta)*tr,sp:3+Math.random()*4,delay:Math.random()*.6,sink:0,life:6}); } }
   /* 발밑 갈라짐, 퍼져 나가는 충격파, 흙먼지, 튀는 자갈 */
-  const ctex=crackTex(), cracks=[];
-  function crack(x,z,size){ const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:ctex,transparent:true,depthWrite:false,opacity:.9}));
-    m.rotation.x=-Math.PI/2; m.rotation.z=Math.random()*TAU; m.position.set(x,quakeH(x,z)+.03+cracks.length*.0005,z); m.scale.setScalar(size); m.renderOrder=2; g.add(m); cracks.push({m,age:0});
-    if(cracks.length>14){ const c0=cracks.shift(); g.remove(c0.m); c0.m.material.dispose(); c0.m.geometry.dispose(); } }
+  const cracks=[];
+  function crack(x,z,power){
+    let c=null, best=2.6; cracks.forEach(k=>{ const d=Math.hypot(k.x-x,k.z-z); if(d<best){ best=d; c=k; } });
+    if(!c){ const cv=document.createElement('canvas'); cv.width=cv.height=512; const tex=new THREE.CanvasTexture(cv);
+      const pg=new THREE.PlaneGeometry(1,1,16,16); pg.rotateX(-Math.PI/2);
+      const m=new THREE.Mesh(pg,new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:1,polygonOffset:true,polygonOffsetFactor:-2}));
+      m.position.set(x,0,z); m.rotation.y=Math.random()*TAU; m.renderOrder=2; g.add(m);
+      c={x,z,m,cv,tex,lines:crackNet(Math.floor(Math.random()*1e6)),L:0,idle:0,size:9};
+      const P=pg.attributes.position; for(let i=0;i<P.count;i++){ const v=new THREE.Vector3(P.getX(i)*c.size,0,P.getZ(i)*c.size).applyAxisAngle(new THREE.Vector3(0,1,0),m.rotation.y); P.setY(i,quakeH(x+v.x,z+v.z)-quakeH(x,z)+.03); }
+      m.scale.set(c.size,1,c.size); m.position.y=quakeH(x,z); cracks.push(c);
+      if(cracks.length>6){ const c0=cracks.shift(); g.remove(c0.m); c0.m.material.dispose(); c0.m.geometry.dispose(); c0.tex.dispose(); } }
+    c.L=Math.min(12,c.L+.6+power*.9); c.idle=0; c.m.material.opacity=1;          /* 쿵 할수록 더 길고 깊게 */
+    drawCrack(c.cv.getContext('2d'),c.lines,c.L); c.tex.needsUpdate=true; return c;
+  }
+  /* 둘레 모래 더미가 무너져 이 틈으로 흘러든다 */
+  function slump(c,x,z,power,R0){ let moved=0;
+    piles.forEach(p=>{ const d=Math.hypot(p.x-x,p.z-z); if(d>R0||p.ht<=.04) return;
+      const amt=Math.min(p.ht-.03,p.h0*power*(.1+.12*(1-d/R0))); if(amt<=0) return; p.ht-=amt; p.idle=0; moved+=amt; flow(p,c,Math.round(8+amt/p.h0*90)); });
+    if(moved>.05&&typeof Sound!=='undefined'&&Sound.sand) Sound.sand(Math.min(1,moved*.6)); }
   const rings=[]; const ringG=new THREE.RingGeometry(.9,1,64); ringG.rotateX(-Math.PI/2);
   function ring(x,z,speed,life,op){ const m=new THREE.Mesh(ringG,new THREE.MeshBasicMaterial({color:0xfff1d8,transparent:true,opacity:op,depthWrite:false})); m.position.set(x,.08,z); g.add(m); rings.push({m,age:0,speed,life,op}); }
   const dustT=canvasTex(64,64,(c2,w,h)=>{ const gr=c2.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2); gr.addColorStop(0,'rgba(222,180,140,.9)'); gr.addColorStop(1,'rgba(222,180,140,0)'); c2.fillStyle=gr; c2.fillRect(0,0,w,h); });
@@ -72,40 +99,38 @@ function buildQuake(){
   const pebbles=new THREE.Points(pg,new THREE.PointsMaterial({color:0x7a4a30,size:.09})); pebbles.frustumCulled=false; g.add(pebbles);
   let pi=0;
   let level=0;                                   // 지금 흔들림 세기(0~1): 연타가 빠를수록 올라간다
-  drawBlocks();
+  drawPiles();
   return {group:g,fog:{c:0xf0dcc0,n:50,f:260},bg:0xf0dcc0,bounds:{circle:[0,0,QK_R-1]},spawn:{x:0,z:4},spawnJ:[2,2],
-    avoid:towers.map(t=>({x:t.x,z:t.z,r:.7})),groundH:quakeH,waterY:-1000,pitch:.3,pitchSit:.14,
+    avoid:piles.map(p=>({x:p.x,z:p.z,r:p.r0*.8})),groundH:quakeH,waterY:-1000,pitch:.3,pitchSit:.14,
     onAct(){ if(typeof Stomp!=='undefined') Stomp.open(); },
     setLevel(v){ level=v; },
     /* 한 번 쿵: 발밑이 갈라지고 충격파가 퍼진다. 세기에 따라 가까운 탑부터 무너진다 */
     stomp(x,z,power){
-      crack(x,z,1.2+power*2.6); ring(x,z,4+power*10,.7+power*.4,.55);
+      const c=crack(x,z,power); ring(x,z,4+power*10,.7+power*.4,.55); slump(c,x,z,power,4+power*14);
       for(let k=0;k<6+power*10;k++){ const a=Math.random()*TAU; puff(x+Math.cos(a)*.4,.2,z+Math.sin(a)*.4,Math.cos(a)*(1+power*2),.4+Math.random()*.8,Math.sin(a)*(1+power*2),.9+power,1+Math.random()*.6); }
       for(let k=0;k<12+power*24;k++){ const p=pv[pi]; const a=Math.random()*TAU, r=Math.random()*(2+power*5); Object.assign(p,{x:x+Math.cos(a)*r,y:.05,z:z+Math.sin(a)*r,vx:0,vy:1.5+Math.random()*3*power,vz:0,life:1.2}); pi=(pi+1)%PN; }
-      towers.forEach(t=>{ if(t.state!=='stand') return; const d=Math.hypot(t.x-x,t.z-z); if(d<3+power*14&&Math.random()<power*.55){ topple(t,(t.x-x)/d,(t.z-z)/d,1+power*2.5); } });
     },
     /* 대지진: 큰 충격파가 끝까지 퍼지며 남은 탑을 모두 쓰러뜨린다 */
     bigQuake(x,z){
-      crack(x,z,9); ring(x,z,26,2.2,.9); ring(x,z,18,2.6,.6);
+      let c=crack(x,z,1); c=crack(x,z,1); c.L=12; drawCrack(c.cv.getContext('2d'),c.lines,12); c.tex.needsUpdate=true; ring(x,z,26,2.2,.9); ring(x,z,18,2.6,.6);
       for(let k=0;k<70;k++){ const a=Math.random()*TAU, s=3+Math.random()*7; puff(x+Math.cos(a)*1.5,.4,z+Math.sin(a)*1.5,Math.cos(a)*s,.6+Math.random()*2,Math.sin(a)*s,2.5+Math.random()*2,2+Math.random()*1.5); }
-      towers.forEach(t=>{ const d=Math.hypot(t.x-x,t.z-z)||1; setTimeout(()=>topple(t,(t.x-x)/d,(t.z-z)/d,4),d/26*1000); });
+      piles.forEach(p=>{ const d=Math.hypot(p.x-x,p.z-z); setTimeout(()=>{ const amt=p.ht-.03; if(amt>0){ p.ht=.03; p.idle=0; flow(p,c,Math.round(30+amt/p.h0*90)); } },d/26*1000); });   /* 모든 더미가 와르르 */
+      if(typeof Sound!=='undefined'&&Sound.sand) setTimeout(()=>Sound.sand(1),300);
     },
     update(t,dt,me){
-      towers.forEach(tw=>{
-        if(tw.state==='stand'){ tw.lp+=dt*(6+level*10); tw.lean+=((level*.09+(level>.5?.03:0))-tw.lean)*Math.min(1,dt*4); }
-        else if(tw.state==='fall'){ tw.timer+=dt; let rest=true;
-          tw.b.forEach(b=>{ b.vy-=14*dt; b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt; b.rx+=b.vrx*dt; b.rz+=b.vrz*dt;
-            const gy=quakeH(b.x,b.z)+b.h*.5; if(b.y<gy){ b.y=gy; b.vy*=-.25; b.vx*=.55; b.vz*=.55; b.vrx*=.5; b.vrz*=.5; if(Math.abs(b.vy)<.6) b.vy=0; }
-            if(Math.hypot(b.vx,b.vz)>.1||Math.abs(b.vy)>.1) rest=false; });
-          if(tw.timer>7&&rest&&level<.2){ tw.state='rewind'; tw.timer=0; tw.b.forEach(b=>{ b.fx=b.x; b.fy=b.y; b.fz=b.z; b.frx=b.rx; b.frz=b.rz; }); } }
-        else if(tw.state==='rewind'){ /* 되감기: 블록들이 휘리릭 제자리로 날아가 다시 쌓인다 */
-          tw.timer+=dt; const u=Math.min(1,tw.timer/1.2);
-          tw.b.forEach((b,k)=>{ const v=Math.min(1,Math.max(0,u*1.6-k*.04)), e=v*v*(3-2*v);
-            b.x=lerp(b.fx,b.hx,e); b.y=lerp(b.fy,b.hy,e)+Math.sin(e*Math.PI)*1.5; b.z=lerp(b.fz,b.hz,e); b.rx=lerp(b.frx,0,e); b.rz=lerp(b.frz,0,e); });
-          if(u>=1&&tw.timer>1.9){ tw.state='stand'; tw.lean=0; tw.b.forEach(b=>{ b.x=b.hx; b.y=b.hy; b.z=b.hz; b.rx=b.rz=0; }); } }
-      });
-      drawBlocks();
-      for(let i=cracks.length-1;i>=0;i--){ const c0=cracks[i]; c0.age+=dt; if(c0.age>10){ c0.m.material.opacity=Math.max(0,.9-(c0.age-10)/3); if(c0.age>13){ g.remove(c0.m); c0.m.material.dispose(); c0.m.geometry.dispose(); cracks.splice(i,1); } } }
+      /* 더미: 무너지는 중엔 목표 높이로 스르르, 잠잠하면 바람에 천천히 다시 쌓인다 */
+      piles.forEach(p=>{ p.idle=(p.idle||0)+dt; if(level<.08&&p.idle>6) p.ht=Math.min(p.h0,p.ht+p.h0*dt*.12);
+        p.h+=(p.ht-p.h)*Math.min(1,dt*(p.ht<p.h?2.2:1.5)); });
+      drawPiles();
+      /* 균열: 잠잠해지면 서서히 메워져 사라진다 */
+      for(let i=cracks.length-1;i>=0;i--){ const c0=cracks[i]; c0.idle+=dt; if(level<.08&&c0.idle>9){ c0.m.material.opacity=Math.max(0,1-(c0.idle-9)/4); if(c0.idle>13){ g.remove(c0.m); c0.m.material.dispose(); c0.m.geometry.dispose(); c0.tex.dispose(); cracks.splice(i,1); } } }
+      /* 모래 알갱이: 잠깐 기다렸다 틈 쪽으로 미끄러져 가서 틈 속으로 빠진다 */
+      for(let i=0;i<SN;i++){ const q=sv[i]; if(q.life<=0) continue; q.life-=dt;
+        if(q.delay>0){ q.delay-=dt; } else if(!q.sink){ const dx=q.tx-q.x, dz=q.tz-q.z, d=Math.hypot(dx,dz);
+          if(d<.15){ q.sink=1; } else { const st=Math.min(d,q.sp*dt); q.x+=dx/d*st; q.z+=dz/d*st; const gy=quakeH(q.x,q.z)+.04; q.y+=(gy-q.y)*Math.min(1,dt*6); } }
+        else { q.y-=dt*1.2; q.sink+=dt; if(q.sink>.5) q.life=0; }
+        if(q.life<=0){ spos[i*3+1]=-99; continue; } spos[i*3]=q.x; spos[i*3+1]=q.y; spos[i*3+2]=q.z; }
+      sgeo.attributes.position.needsUpdate=true;
       for(let i=rings.length-1;i>=0;i--){ const r=rings[i]; r.age+=dt; const k=r.age/r.life; r.m.scale.setScalar(1+r.age*r.speed); r.m.material.opacity=r.op*(1-k); if(k>=1){ g.remove(r.m); r.m.material.dispose(); rings.splice(i,1); } }
       for(const d of dust){ if(d.life<=0) continue; d.age+=dt; const k=d.age/d.life; if(k>=1){ d.life=0; d.s.visible=false; continue; }
         d.vx*=1-1.5*dt; d.vz*=1-1.5*dt; d.s.position.x+=d.vx*dt; d.s.position.y+=d.vy*dt; d.s.position.z+=d.vz*dt; const s=d.size*(1+k*1.5); d.s.scale.set(s,s,1); d.s.material.opacity=.7*(1-k); }

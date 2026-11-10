@@ -575,6 +575,14 @@ const Sound=(()=>{
     if(!ctx||!cur) return; const sc=cur;
     for(let i=0;i<Math.min(16,n+3);i++) sc.timers.push(setTimeout(()=>{ hit(sc,700,2200,4,rnd(.06,.16),rnd(.02,.05)); if(Math.random()<.5) tone(sc,rnd(500,900),rnd(450,850),rnd(.04,.08),rnd(.02,.05),'triangle',.3,rnd(-.6,.6)); },rnd(0,700)));
   }
+  /* 모래가 스르르 무너져 흘러내리는 소리(쏴아) */
+  function sand(v){
+    if(!ctx||!cur) return; const sc=cur, t=ctx.currentTime, d=.7+v*.9;
+    const s=ctx.createBufferSource(); s.buffer=noiseW; const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(2600,t); lp.frequency.exponentialRampToValueAtTime(700,t+d);
+    const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=250;
+    const g=ctx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.16+.22*v,t+.12); g.gain.exponentialRampToValueAtTime(.001,t+d);
+    s.connect(lp); lp.connect(hp); hp.connect(g); g.connect(sc.bus); s.start(t,rnd(0,2)); s.stop(t+d+.05);
+  }
   /* 종이 찢기: 긋는 동안 섬유가 뜯기는 '찌이익'(빠를수록 밝고 크게), 다 갈라질 때 '쫙!' */
   let tearN=null;
   function tearOn(){
@@ -669,7 +677,7 @@ const Sound=(()=>{
     }
   }
   return {
-    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche, tearOn, tearSet, tearOff, rip, stomp, quakeSet, bigQuake, blocks, pop,
+    init, enter, setSeated, event, shout, smash, kick, whoosh, punch, scream, crumple, avalanche, tearOn, tearSet, tearOff, rip, stomp, quakeSet, bigQuake, blocks, sand, pop,
     setVolume(v){ vol=v; applyMaster(); },
     setMuted(m){ muted=m; applyMaster(); },
     get ok(){ return !!ctx; }
